@@ -13,6 +13,9 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', servicio: 'AIR', timestamp: new Date().toISOString() });
 });
 
+const normativaRoutes = require('./routes/normativa.routes');
+app.use(normativaRoutes);
+
 app.listen(PORT, () => {
   console.log(`Servidor AIR escuchando en puerto ${PORT}`);
 });
