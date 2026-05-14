@@ -54,6 +54,13 @@ button{
 padding:8px;
 }
 
+img{
+width:60px;
+height:60px;
+object-fit:cover;
+border-radius:50%;
+}
+
 </style>
 
 </head>
@@ -66,6 +73,7 @@ Lista de Asambleistas
 
 <input 
 type="text"
+name="busqueda"
 placeholder="Buscar por nombre o cédula">
 
 <button>
@@ -77,6 +85,10 @@ Consultar
 <table>
 
 <tr>
+
+<th>
+Foto
+</th>
 
 <th>
 Nombre
@@ -91,12 +103,20 @@ Correo
 </th>
 
 <th>
-Estado
+Sector
+</th>
+
+<th>
+Estado del Nombramiento
 </th>
 
 </tr>
 
 <tr>
+
+<td>
+<img src="https://via.placeholder.com/60" alt="Foto">
+</td>
 
 <td>
 Diana Solano
@@ -108,6 +128,10 @@ Diana Solano
 
 <td>
 diana@gmail.com
+</td>
+
+<td>
+Docente
 </td>
 
 <td>
@@ -123,6 +147,10 @@ VIGENTE
 <tr>
 
 <td>
+<img src="https://via.placeholder.com/60" alt="Foto">
+</td>
+
+<td>
 Juan Pérez
 </td>
 
@@ -132,6 +160,10 @@ Juan Pérez
 
 <td>
 juan@gmail.com
+</td>
+
+<td>
+Estudiantil
 </td>
 
 <td>

@@ -26,75 +26,51 @@
 -- ISSUE #9 - ASAMBLEISTAS
 -- DIANA SOLANO
 
-CREATE TABLE catalogo_sector (
-
-id_sector SERIAL PRIMARY KEY,
-
-nombre VARCHAR(100) NOT NULL,
-
-estado BOOLEAN DEFAULT TRUE
-
-);
-
-CREATE TABLE catalogo_puestos (
-
-id_puesto SERIAL PRIMARY KEY,
-
-nombre VARCHAR(100) NOT NULL,
-
-estado BOOLEAN DEFAULT TRUE
-
-);
-
-CREATE TABLE catalogo_tipo_sesion (
-
-id_tipo_sesion SERIAL PRIMARY KEY,
-
-nombre VARCHAR(50) NOT NULL
-
-);
-
-CREATE TABLE catalogo_tipo_modalidad (
-
-id_modalidad SERIAL PRIMARY KEY,
-
-nombre VARCHAR(50) NOT NULL
-
-);
-
 CREATE TABLE asambleista (
 
 id_asambleista SERIAL PRIMARY KEY,
 
-nombre VARCHAR(150) NOT NULL,
+nombre_completo VARCHAR(150) NOT NULL,
 
 cedula VARCHAR(20) UNIQUE NOT NULL,
 
 correo VARCHAR(150) NOT NULL,
 
-id_sector INTEGER REFERENCES catalogo_sector(id_sector),
+foto_url TEXT,
+
+activo BOOLEAN NOT NULL DEFAULT TRUE,
+
+fecha_registro TIMESTAMP NOT NULL DEFAULT NOW()
+
+);
+
+CREATE TABLE nombramiento (
+
+id_nombramiento SERIAL PRIMARY KEY,
+
+id_asambleista INT NOT NULL REFERENCES asambleista(id_asambleista),
+
+id_sector INT NOT NULL REFERENCES catalogo_maestro(id_item),
 
 fecha_inicio DATE NOT NULL,
 
 fecha_fin DATE,
 
-estado BOOLEAN DEFAULT TRUE,
-
-created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+activo BOOLEAN NOT NULL DEFAULT TRUE
 
 );
 
-CREATE TABLE bitacora_asambleistas (
+CREATE TABLE bitacora_asambleista (
 
 id_bitacora SERIAL PRIMARY KEY,
 
 id_asambleista INTEGER REFERENCES asambleista(id_asambleista),
 
-accion VARCHAR(50),
+accion VARCHAR(50) NOT NULL,
 
 descripcion TEXT,
 
-fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+fecha TIMESTAMP NOT NULL DEFAULT NOW()
 
 );
 
@@ -145,9 +121,7 @@ fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 -- SECCION 10: DATOS SEMILLA
 -- =====================================
 
-INSERT INTO catalogo_sector(nombre)
-
-VALUES
-('Docente'),
-('Administrativo'),
-('Estudiantil');
+INSERT INTO catalogo_maestro (grupo_catalogo, nombre) VALUES
+    ('SECTOR_ASAMBLEA', 'Docente'),
+    ('SECTOR_ASAMBLEA', 'Administrativo'),
+    ('SECTOR_ASAMBLEA', 'Estudiantil');
