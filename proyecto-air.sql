@@ -3,6 +3,56 @@
 -- Script unico acumulativo, organizado por secciones modulares
 
 
+-- Issue #0
+-- Crear tabla de usuarios
+CREATE TABLE IF NOT EXISTS usuario (
+    id_usuario UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    correo VARCHAR(100) NOT NULL UNIQUE,
+    contraseña_hash VARCHAR(255) NOT NULL,
+    nombre_completo VARCHAR(150) NOT NULL,
+    rol VARCHAR(50) NOT NULL CHECK (rol IN ('Admin', 'Editor', 'Consulta')),
+    estado VARCHAR(20) NOT NULL DEFAULT 'Activo' CHECK (estado IN ('Activo', 'Inactivo')),
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uk_usuario_correo UNIQUE(correo)
+);
+
+-- Crear tabla de permisos (relación M:M)
+CREATE TABLE IF NOT EXISTS permiso (
+    id_permiso SERIAL PRIMARY KEY,
+    codigo_accion VARCHAR(50) NOT NULL UNIQUE,
+    descripcion TEXT,
+    CONSTRAINT uk_permiso_codigo UNIQUE(codigo_accion)
+);
+
+-- Tabla de relación usuario-permisos
+CREATE TABLE IF NOT EXISTS usuario_permisos (
+    id_usuario_permiso SERIAL PRIMARY KEY,
+    id_usuario UUID NOT NULL REFERENCES usuario(id_usuario) ON DELETE CASCADE,
+    id_permiso INTEGER NOT NULL REFERENCES permiso(id_permiso) ON DELETE CASCADE,
+    fecha_asignacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_fin DATE,
+    CONSTRAINT uk_usuario_permiso UNIQUE(id_usuario, id_permiso)
+);
+
+-- Crear índices para búsquedas rápidas
+CREATE INDEX idx_usuario_correo ON usuario(correo);
+CREATE INDEX idx_usuario_rol ON usuario(rol);
+CREATE INDEX idx_usuario_permisos ON usuario_permisos(id_usuario);
+
+-- Insertar permisos base
+INSERT INTO permiso (codigo_accion, descripcion) VALUES
+    ('CREAR_ASAMBLEISTA', 'Crear nuevos asambleístas'),
+    ('EDITAR_ASAMBLEISTA', 'Editar información de asambleístas'),
+    ('CREAR_NORMATIVA', 'Crear reglamentos'),
+    ('EDITAR_NORMATIVA', 'Editar reglamentos'),
+    ('REGISTRAR_VOTO', 'Registrar votos en sesiones'),
+    ('EMITIR_CERTIFICACION', 'Emitir certificaciones'),
+    ('VER_AUDITORIA', 'Ver registros de auditoría'),
+    ('ADMINISTRAR_USUARIOS', 'Crear y gestionar usuarios')
+ON CONFLICT DO NOTHING;
+
+
 -- SECCION: CATALOGOS TRANSVERSALES
 
 CREATE TABLE catalogo_maestro (
