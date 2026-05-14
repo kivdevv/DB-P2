@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+<meta charset="UTF-8">
+<title>Registro Asambleista</title>
+</head>
+
+<body>
+
+<h1>Registro de Asambleista</h1>
+
+<form>
+
+<label>Nombre Completo</label>
+<br>
+
+<input 
+type="text"
+required>
+
+<br><br>
+
+<label>Cédula</label>
+<br>
+
+<input 
+type="text"
+placeholder="1-1234-5678"
+pattern="[0-9]-[0-9]{4}-[0-9]{4}"
+required>
+
+<br><br>
+
+<label>Correo</label>
+<br>
+
+<input 
+type="email"
+required>
+
+<br><br>
+
+<label>Sector</label>
+<br>
+
+<select required>
+
+<option value="">
+Seleccione
+</option>
+
+<option>
+Docente
+</option>
+
+<option>
+Administrativo
+</option>
+
+<option>
+Estudiantil
+</option>
+
+</select>
+
+<br><br>
+
+<label>Fecha Inicio</label>
+<br>
+
+<input 
+type="date"
+required>
+
+<br><br>
+
+<label>Fecha Fin</label>
+<br>
+
+<input 
+type="date">
+
+<br><br>
+
+<button type="submit">
+Guardar
+</button>
+
+</form>
+
+</body>
+</html>
