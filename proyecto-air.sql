@@ -6,13 +6,42 @@
 -- SECCION: CATALOGOS TRANSVERSALES
 
 CREATE TABLE catalogo_maestro (
-    id_item          SERIAL PRIMARY KEY,
-    grupo_catalogo   VARCHAR(50)  NOT NULL,
-    nombre           VARCHAR(100) NOT NULL,
-    activo           BOOLEAN      NOT NULL DEFAULT TRUE,
+    id_item SERIAL PRIMARY KEY,
+    grupo_catalogo VARCHAR(50) NOT NULL,
+    nombre VARCHAR(100) NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
     UNIQUE (grupo_catalogo, nombre)
 );
 
+CREATE TABLE catalogo_etapas_propuestas (
+    id_etapa_propuesta SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) UNIQUE NOT NULL
+);
+
+CREATE TABLE catalogo_estado_propuestas (
+    id_estado_propuesta SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) UNIQUE NOT NULL
+);
+
+CREATE TABLE catalogo_tipo_mayoria_requerida (
+    id_tipo_mayoria_requerida SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) UNIQUE NOT NULL
+);
+
+CREATE TABLE catalogo_tipo_reforma (
+    id_tipo_reforma SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) UNIQUE NOT NULL
+);
+
+CREATE TABLE catalogo_estado_vigencia (
+    id_estado_vigencia SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) UNIQUE NOT NULL
+);
+
+CREATE TABLE catalogo_asistencia_sesion_comision (
+    id_estado_asistencia SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) UNIQUE NOT NULL
+);
 
 -- SECCION: MODULO IDENTIDAD Y ACTORES (Issue 9, 14)
 -- Reservado para Diana / Kevin. No modificar hasta que ellos integren su aporte.
@@ -52,30 +81,98 @@ CREATE UNIQUE INDEX idx_elemento_vigente_unico
 -- SECCION: MODULO SESIONES Y TRAMITE (Issue 15, Sprint 3)
 -- Reservado. No modificar hasta Sprint 3.
 
+-- =====================================
+-- SECCION 4: MODULO 2 - NORMATIVA
+-- =====================================
+
+CREATE TABLE propuesta (
+    id_propuesta SERIAL PRIMARY KEY,
+    titulo VARCHAR(255) NOT NULL,
+    descripcion TEXT NOT NULL,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    id_etapa_propuesta INT NOT NULL,
+    id_estado_propuesta INT NOT NULL,
+    id_tipo_mayoria_requerida INT NOT NULL,
+    id_tipo_reforma INT NOT NULL,
+
+    CONSTRAINT fk_etapa_propuesta
+        FOREIGN KEY (id_etapa_propuesta)
+        REFERENCES catalogo_etapas_propuestas(id_etapa_propuesta),
+
+    CONSTRAINT fk_estado_propuesta
+        FOREIGN KEY (id_estado_propuesta)
+        REFERENCES catalogo_estado_propuestas(id_estado_propuesta),
+
+    CONSTRAINT fk_tipo_mayoria
+        FOREIGN KEY (id_tipo_mayoria_requerida)
+        REFERENCES catalogo_tipo_mayoria_requerida(id_tipo_mayoria_requerida),
+
+    CONSTRAINT fk_tipo_reforma
+        FOREIGN KEY (id_tipo_reforma)
+        REFERENCES catalogo_tipo_reforma(id_tipo_reforma)
+);
+
+CREATE TABLE bitacora_propuesta (
+    id_bitacora_propuesta SERIAL PRIMARY KEY,
+
+    id_propuesta INT NOT NULL,
+
+    fecha_movimiento TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    detalle TEXT NOT NULL,
+
+    CONSTRAINT fk_bitacora_propuesta
+        FOREIGN KEY (id_propuesta)
+        REFERENCES propuesta(id_propuesta)
+);
 
 -- SECCION: TRIGGERS
+
+CREATE TABLE sesiones (
+    id_sesion SERIAL PRIMARY KEY,
+
+    numero_sesion INT NOT NULL,
+
+    fecha DATE NOT NULL,
+
+    link_acta TEXT,
+
+    quorum_requerido INT NOT NULL
+);
+
+CREATE TABLE acta (
+    id_acta SERIAL PRIMARY KEY,
+
+    id_sesion INT NOT NULL,
+
+    fecha_aprobacion DATE,
+
+    url_documento TEXT,
+
+    observaciones TEXT,
+
+    CONSTRAINT fk_acta_sesion
+        FOREIGN KEY (id_sesion)
+        REFERENCES sesiones(id_sesion)
+);
 
 CREATE OR REPLACE FUNCTION fn_vigencia_normativa()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE
     v_id_historico INT;
 BEGIN
-    -- Buscar el id_item correspondiente a 'Historico' dentro del grupo ESTADO_VIGENCIA
     SELECT id_item INTO v_id_historico
     FROM catalogo_maestro
     WHERE grupo_catalogo = 'ESTADO_VIGENCIA'
       AND nombre = 'Historico'
     LIMIT 1;
 
-    -- Si ya existe una version vigente del mismo elemento bajo el mismo padre
-    -- dentro del mismo reglamento, cerrarla antes de insertar la nueva.
-    -- IS NOT DISTINCT FROM trata NULL como igual a NULL (elementos raiz sin padre).
     UPDATE elemento_normativo
-    SET fecha_fin_vigencia  = CURRENT_DATE,
-        id_estado_vigencia  = v_id_historico
-    WHERE id_reglamento     = NEW.id_reglamento
+    SET fecha_fin_vigencia = CURRENT_DATE,
+        id_estado_vigencia = v_id_historico
+    WHERE id_reglamento = NEW.id_reglamento
       AND id_elemento_padre IS NOT DISTINCT FROM NEW.id_elemento_padre
-      AND numero_etiqueta   = NEW.numero_etiqueta
+      AND numero_etiqueta = NEW.numero_etiqueta
       AND fecha_fin_vigencia IS NULL;
 
     RETURN NEW;
@@ -86,7 +183,6 @@ CREATE TRIGGER tg_vigencia_normativa
     BEFORE INSERT ON elemento_normativo
     FOR EACH ROW
     EXECUTE FUNCTION fn_vigencia_normativa();
-
 
 -- Datos semilla
 
@@ -171,3 +267,73 @@ BEGIN
          'b', 'Fomentara la investigacion tecnologica y cientifica.', 2, '2020-01-01', NULL);
 END;
 $$;
+
+-- =====================================
+-- SECCION 10: DATOS SEMILLA
+-- =====================================
+
+INSERT INTO catalogo_etapas_propuestas (nombre)
+VALUES
+('Borrador'),
+('En revisión'),
+('En votación'),
+('Aprobada');
+
+INSERT INTO catalogo_estado_propuestas (nombre)
+VALUES
+('Activa'),
+('Archivada'),
+('Aprobada'),
+('Rechazada');
+
+INSERT INTO catalogo_tipo_mayoria_requerida (nombre)
+VALUES
+('Mayoría simple'),
+('Mayoría calificada');
+
+INSERT INTO catalogo_tipo_reforma (nombre)
+VALUES
+('Reforma parcial'),
+('Reforma total'),
+('Derogación');
+
+INSERT INTO catalogo_estado_vigencia (nombre)
+VALUES
+('Vigente'),
+('No vigente');
+
+INSERT INTO catalogo_asistencia_sesion_comision (nombre)
+VALUES
+('Presente'),
+('Ausente'),
+('Justificado');
+
+INSERT INTO sesiones (
+    numero_sesion,
+    fecha,
+    link_acta,
+    quorum_requerido
+)
+VALUES (
+    101,
+    '2025-05-15',
+    'https://air.tec.ac.cr/actas/sesion101.pdf',
+    50
+);
+
+INSERT INTO propuesta (
+    titulo,
+    descripcion,
+    id_etapa_propuesta,
+    id_estado_propuesta,
+    id_tipo_mayoria_requerida,
+    id_tipo_reforma
+)
+VALUES (
+    'Reforma Reglamento General',
+    'Actualización de artículos institucionales.',
+    1,
+    1,
+    1,
+    1
+);
