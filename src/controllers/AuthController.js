@@ -142,6 +142,40 @@ class AuthController {
             });
         }
     }
+
+    static async cambiarContraseña(req, res) {
+        try {
+            const { contraseña_actual, contraseña_nueva } = req.body;
+            const id_usuario = req.usuario.id_usuario;
+
+            const resultado = await Usuario.cambiarContraseña(
+                id_usuario,
+                contraseña_actual,
+                contraseña_nueva
+            );
+
+            return res.status(200).json(resultado);
+
+        } catch (err) {
+            res.status(400).json({ error: err.message });
+        }
+    }
+
+    static async obtenerPermisos(req, res) {
+        try {
+            const id_usuario = req.usuario.id_usuario;
+            const permisos = await Usuario.obtenerPermisos(id_usuario);
+
+            return res.status(200).json({
+                id_usuario,
+                permisos,
+                total: permisos.length
+            });
+
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
 }
 
 module.exports = AuthController;
