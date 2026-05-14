@@ -13,7 +13,8 @@ CREATE TABLE catalogo_maestro (
   grupo_catalogo VARCHAR(50) NOT NULL,
   nombre VARCHAR(100) NOT NULL,
   activo BOOLEAN NOT NULL DEFAULT TRUE,
-  fecha_creacion TIMESTAMP NOT NULL DEFAULT NOW()
+  fecha_creacion TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE (grupo_catalogo, nombre)
 );
 
 -- Índice para búsquedas rápidas por grupo
@@ -33,7 +34,7 @@ CREATE INDEX idx_catalogo_maestro_grupo ON catalogo_maestro(grupo_catalogo);
 
 -- =====================================
 -- ISSUE #9 - ASAMBLEISTAS
--- DIANA SOLANO
+-- DIANA SOLANO / NANA1822
 
 CREATE TABLE asambleista (
   id_asambleista SERIAL PRIMARY KEY,
@@ -64,18 +65,19 @@ CREATE TABLE bitacora_asambleista (
   fecha TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+
 -- =====================================
 -- SECCION 4: MODULO 2 - NORMATIVA
 -- =====================================
 
--- (por definir)
+-- (por definir en futuros issues)
 
 
 -- =====================================
 -- SECCION 5: MODULO 3 - SESIONES
 -- =====================================
 
--- (por definir)
+-- (por definir en futuros issues)
 
 
 -- =====================================
@@ -173,7 +175,24 @@ $$ LANGUAGE plpgsql;
 -- SECCION 10: DATOS SEMILLA
 -- =====================================
 
+-- Datos semilla para sectores de asambleístas (Grupo: SECTOR_ASAMBLEA)
 INSERT INTO catalogo_maestro (grupo_catalogo, nombre) VALUES
     ('SECTOR_ASAMBLEA', 'Docente'),
     ('SECTOR_ASAMBLEA', 'Administrativo'),
     ('SECTOR_ASAMBLEA', 'Estudiantil');
+
+-- Datos semilla para niveles de la estructura normativa (para Issue #10)
+-- NOTA: Estos se insertarán cuando se integre la rama issue-10
+-- INSERT INTO catalogo_maestro (grupo_catalogo, nombre) VALUES
+--     ('NIVEL_REGLAMENTO', 'Titulo'),
+--     ('NIVEL_REGLAMENTO', 'Capitulo'),
+--     ('NIVEL_REGLAMENTO', 'Articulo'),
+--     ('NIVEL_REGLAMENTO', 'Inciso'),
+--     ('NIVEL_REGLAMENTO', 'Sub-inciso');
+
+-- Estados de vigencia para normativa (para Issue #10)
+-- NOTA: Estos se insertarán cuando se integre la rama issue-10
+-- INSERT INTO catalogo_maestro (grupo_catalogo, nombre) VALUES
+--     ('ESTADO_VIGENCIA', 'Vigente'),
+--     ('ESTADO_VIGENCIA', 'Historico'),
+--     ('ESTADO_VIGENCIA', 'Derogado');
