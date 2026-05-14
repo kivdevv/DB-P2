@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visor de Elemento Normativo - AIR</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Georgia, Cambria, 'Times New Roman', serif;
+            background: #fff;
+            color: #1a1a1a;
+            padding: 2rem 1rem;
+        }
+
+        .contenedor-principal {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+
+        .enlace-volver {
+            display: inline-block;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            color: #333;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .mensaje-estado {
+            color: #666;
+            font-style: italic;
+            margin-top: 1rem;
+        }
+
+        .bloque-vigente {
+            border-left: 4px solid #333;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .bloque-vigente .titulo-elemento {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 0.75rem;
+        }
+
+        .bloque-vigente .texto-elemento {
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 0.75rem;
+        }
+
+        .metadatos {
+            font-size: 0.82rem;
+            color: #555;
+        }
+
+        .bloque-historial {
+            background: #fafafa;
+            padding: 1rem 1.25rem;
+        }
+
+        .bloque-historial h2 {
+            font-size: 1rem;
+            font-weight: bold;
+            margin-bottom: 0.75rem;
+        }
+
+        .version-item {
+            padding: 0.6rem 0;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .version-item:first-of-type { border-top: none; }
+
+        .version-indicador {
+            font-size: 0.82rem;
+            font-weight: bold;
+            margin-bottom: 0.3rem;
+        }
+
+        .version-indicador.vigente { color: #1a6e1a; }
+        .version-indicador.historico { color: #888; }
+
+        .version-contenido {
+            font-size: 0.9rem;
+            color: #333;
+            line-height: 1.4;
+        }
+
+        .version-fecha {
+            font-size: 0.8rem;
+            color: #777;
+            margin-top: 0.2rem;
+        }
+
+        .sin-reformas {
+            font-size: 0.9rem;
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="contenedor-principal">
+        <h1>Visor de Elemento Normativo</h1>
+        <a class="enlace-volver" href="reglamento-arbol.view.html">Volver al reglamento</a>
+        <div id="contenido"></div>
+    </div>
+
+    <script>
+        function escapeHtml(texto) {
+            return String(texto)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function truncar(texto, limite) {
+            if (!texto || texto.length <= limite) return texto;
+            return texto.slice(0, limite) + '...';
+        }
+
+        function formatearFecha(fechaStr) {
+            if (!fechaStr) return '';
+            const [anio, mes, dia] = fechaStr.slice(0, 10).split('-');
+            return dia + '/' + mes + '/' + anio;
+        }
+
+        function mostrarMensaje(texto) {
+            const contenido = document.getElementById('contenido');
+            contenido.innerHTML = '';
+            const p = document.createElement('p');
+            p.className = 'mensaje-estado';
+            p.textContent = texto;
+            contenido.appendChild(p);
+        }
+
+        function renderizarElemento(actual, versiones) {
+            const contenido = document.getElementById('contenido');
+            contenido.innerHTML = '';
+
+            // Bloque version vigente
+            const bloqueVigente = document.createElement('div');
+            bloqueVigente.className = 'bloque-vigente';
+
+            const titulo = document.createElement('div');
+            titulo.className = 'titulo-elemento';
+            titulo.textContent = (actual.nivel ?? '') + ' ' + actual.numero_etiqueta;
+
+            const texto = document.createElement('p');
+            texto.className = 'texto-elemento';
+            texto.textContent = actual.contenido_texto;
+
+            const meta = document.createElement('div');
+            meta.className = 'metadatos';
+            meta.textContent =
+                'Estado: ' + (actual.estado ?? '-') +
+                '  |  Vigente desde: ' + formatearFecha(actual.fecha_inicio_vigencia);
+
+            bloqueVigente.appendChild(titulo);
+            bloqueVigente.appendChild(texto);
+            bloqueVigente.appendChild(meta);
+            contenido.appendChild(bloqueVigente);
+
+            // Bloque historial
+            const bloqueHistorial = document.createElement('div');
+            bloqueHistorial.className = 'bloque-historial';
+
+            const tituloHistorial = document.createElement('h2');
+            tituloHistorial.textContent = 'Historial de Trazabilidad';
+            bloqueHistorial.appendChild(tituloHistorial);
+
+            // El elemento no ha sido reformado si solo existe una version y esta vigente
+            const hayHistorial = versiones.length > 1 ||
+                versiones.some(v => v.fecha_fin_vigencia !== null);
+
+            if (!hayHistorial) {
+                const sinReformas = document.createElement('p');
+                sinReformas.className = 'sin-reformas';
+                sinReformas.textContent = 'Este elemento no ha sido reformado.';
+                bloqueHistorial.appendChild(sinReformas);
+            } else {
+                for (const version of versiones) {
+                    const item = document.createElement('div');
+                    item.className = 'version-item';
+
+                    const esVigente = version.fecha_fin_vigencia === null;
+
+                    const indicador = document.createElement('div');
+                    indicador.className = 'version-indicador ' + (esVigente ? 'vigente' : 'historico');
+                    indicador.textContent = esVigente
+                        ? 'Vigente'
+                        : 'Historico (cerrado el ' + formatearFecha(version.fecha_fin_vigencia) + ')';
+
+                    const textoVersion = document.createElement('div');
+                    textoVersion.className = 'version-contenido';
+                    textoVersion.textContent = truncar(version.contenido_texto, 200);
+
+                    const fechaVersion = document.createElement('div');
+                    fechaVersion.className = 'version-fecha';
+                    fechaVersion.textContent = 'Vigente desde: ' + formatearFecha(version.fecha_inicio_vigencia);
+
+                    item.appendChild(indicador);
+                    item.appendChild(textoVersion);
+                    item.appendChild(fechaVersion);
+                    bloqueHistorial.appendChild(item);
+                }
+            }
+
+            contenido.appendChild(bloqueHistorial);
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const params = new URLSearchParams(window.location.search);
+            const idElemento = params.get('id');
+
+            if (!idElemento) {
+                mostrarMensaje('Debe especificar un id de elemento en la URL');
+                return;
+            }
+
+            try {
+                const resp = await fetch('/api/elementos/' + idElemento);
+                if (resp.status === 404) {
+                    mostrarMensaje('Elemento no encontrado');
+                    return;
+                }
+                if (!resp.ok) {
+                    mostrarMensaje('Error al cargar el elemento');
+                    return;
+                }
+                const { actual, versiones } = await resp.json();
+                renderizarElemento(actual, versiones);
+            } catch {
+                mostrarMensaje('Error al cargar el elemento');
+            }
+        });
+    </script>
+</body>
+</html>
