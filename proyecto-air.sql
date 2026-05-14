@@ -125,6 +125,19 @@ CREATE TABLE bitacora_propuesta (
         FOREIGN KEY (id_propuesta)
         REFERENCES propuesta(id_propuesta)
 );
+CREATE TABLE proponente_propuesta (
+    id_proponente_propuesta SERIAL PRIMARY KEY,
+
+    id_propuesta INT NOT NULL,
+
+    id_usuario INT NOT NULL,
+
+    CONSTRAINT fk_proponente_propuesta
+        FOREIGN KEY (id_propuesta)
+        REFERENCES propuesta(id_propuesta)
+
+    -- FK de usuario pendiente hasta integrar modulo identidad
+);
 
 -- SECCION: TRIGGERS
 
@@ -154,6 +167,25 @@ CREATE TABLE acta (
     CONSTRAINT fk_acta_sesion
         FOREIGN KEY (id_sesion)
         REFERENCES sesiones(id_sesion)
+);
+CREATE TABLE asistencia_sesion_plenaria (
+    id_asistencia SERIAL PRIMARY KEY,
+
+    id_sesion INT NOT NULL,
+
+    id_usuario INT NOT NULL,
+
+    id_estado_asistencia INT NOT NULL,
+
+    CONSTRAINT fk_asistencia_sesion
+        FOREIGN KEY (id_sesion)
+        REFERENCES sesiones(id_sesion),
+
+    CONSTRAINT fk_estado_asistencia
+        FOREIGN KEY (id_estado_asistencia)
+        REFERENCES catalogo_asistencia_sesion_comision(id_estado_asistencia)
+
+    -- FK usuario pendiente hasta integrar modulo identidad
 );
 
 CREATE OR REPLACE FUNCTION fn_vigencia_normativa()
@@ -334,6 +366,25 @@ VALUES (
     'Actualización de artículos institucionales.',
     1,
     1,
+    1,
+    1
+);
+INSERT INTO asistencia_sesion_plenaria (
+    id_sesion,
+    id_usuario,
+    id_estado_asistencia
+)
+VALUES (
+    1,
+    1,
+    1
+);
+
+INSERT INTO proponente_propuesta (
+    id_propuesta,
+    id_usuario
+)
+VALUES (
     1,
     1
 );
