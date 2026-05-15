@@ -51,16 +51,23 @@ fe pública.
 
 ```
 /
-├── proyecto-air.sql        # Script principal de la base de datos
+├── /database               # Script principal de la base de datos
+│   ├── proyecto-air.sql  
 ├── /docs                   # Documentación del proyecto
 ├── /src
 │   ├── /config             # Configuración de BD y seguridad
-│   ├── /models             # Modelos de datos
 │   ├── /controllers        # Lógica de negocio
-│   ├── /views              # Vistas organizadas por módulo
+│   ├── /middleware         # Middleware JWT y autenticación
+│   ├── /models             # Modelos de datos
+│   ├── /routes             # Definición de endpoints
 │   ├── /services           # Servicios auxiliares
-│   └── /logs               # Logs de la aplicación
-└── /tests                  # Pruebas
+│   ├── /views              # Interfaces HTML
+│   ├── /logs               # Logs del sistema
+│   └── index.js            # Punto principal del servidor
+├── /tests                  # Pruebas
+├── README.md
+├── REGLAS_GIT.md
+└── package.json
 ```
 
 ## Ramas
