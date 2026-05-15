@@ -95,10 +95,6 @@ list="asambleistas"
 placeholder="Nombre o cédula">
 
 <datalist id="asambleistas">
-
-<option value="Asambleista Demo">
-<option value="1-1111-1111">
-
 </datalist>
 
 </div>
@@ -135,8 +131,12 @@ name="fecha_fin">
 
 <div>
 
-<button type="submit">
+<button
+type="submit"
+id="btnConsultar">
+
 Consultar
+
 </button>
 
 </div>
@@ -187,6 +187,44 @@ document.getElementById('formFiltros');
 const tabla =
 document.getElementById('tablaAsambleistas');
 
+const btnConsultar =
+document.getElementById('btnConsultar');
+
+const datalist =
+document.getElementById('asambleistas');
+
+async function cargarAutocompletado(){
+
+    try {
+
+        const respuesta =
+        await fetch(
+            'http://localhost:3000/asambleistas/buscar'
+        );
+
+        const datos =
+        await respuesta.json();
+
+        datalist.innerHTML = '';
+
+        datos.forEach(function(asambleista){
+
+            datalist.innerHTML += `
+                <option value="${asambleista.nombre_completo}">
+                <option value="${asambleista.cedula}">
+            `;
+        });
+
+    } catch(error){
+
+        console.error(
+            'Error al cargar autocompletado'
+        );
+    }
+}
+
+cargarAutocompletado();
+
 formulario.addEventListener(
 'submit',
 async function(event){
@@ -217,42 +255,70 @@ async function(event){
 
     try {
 
+        btnConsultar.disabled = true;
+
+        btnConsultar.textContent =
+        'Consultando...';
+
         const parametros =
         new URLSearchParams();
+
         if(busqueda){
+
             parametros.append(
-            'busqueda',
-        busqueda
-    );
-}
+                'busqueda',
+                busqueda
+            );
+        }
+
         if(fechaInicio){
+
             parametros.append(
-             'fecha_inicio',
-             fechaInicio
-    );
-}
+                'fecha_inicio',
+                fechaInicio
+            );
+        }
 
         if(fechaFin){
+
             parametros.append(
                 'fecha_fin',
                 fechaFin
-    );
-}
+            );
+        }
 
         const respuesta =
         await fetch(
-    `http://localhost:3000/asambleistas/buscar?${parametros.toString()}`
-);
+            `http://localhost:3000/asambleistas/buscar?${parametros.toString()}`
+        );
 
         const datos =
         await respuesta.json();
-        console.log(datos);
+
         tabla.innerHTML = '';
+
+        if(datos.length === 0){
+
+            tabla.innerHTML = `
+                <tr>
+                    <td colspan="5">
+                        No se encontraron asambleistas
+                    </td>
+                </tr>
+            `;
+
+            btnConsultar.disabled = false;
+
+            btnConsultar.textContent =
+            'Consultar';
+
+            return;
+        }
 
         datos.forEach(function(asambleista){
 
             const estado =
-            asambleista.estado
+            asambleista.activo
             ? '<span class="vigente">VIGENTE</span>'
             : '<span class="inactivo">INACTIVO</span>';
 
@@ -261,15 +327,25 @@ async function(event){
                     <td>${asambleista.nombre_completo}</td>
                     <td>${asambleista.cedula}</td>
                     <td>${asambleista.correo}</td>
-                    <td>${asambleista.fecha_registro}</td>
+                    <td>${asambleista.fecha_registro ? asambleista.fecha_registro.split('T')[0] : ''}</td>
                     <td>${estado}</td>
                 </tr>
             `;
         });
 
+        btnConsultar.disabled = false;
+
+        btnConsultar.textContent =
+        'Consultar';
+
     } catch(error){
 
         console.error(error);
+
+        btnConsultar.disabled = false;
+
+        btnConsultar.textContent =
+        'Consultar';
 
         alert(
             'Error al consultar asambleistas'
