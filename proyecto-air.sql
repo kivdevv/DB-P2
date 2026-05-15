@@ -38,6 +38,7 @@ CREATE INDEX idx_catalogo_maestro_grupo ON catalogo_maestro(grupo_catalogo);
 
 CREATE TABLE asambleista (
   id_asambleista SERIAL PRIMARY KEY,
+  id_usuario UUID REFERENCES usuario(id_usuario),
   nombre_completo VARCHAR(150) NOT NULL,
   cedula VARCHAR(20) UNIQUE NOT NULL,
   correo VARCHAR(150) NOT NULL,
