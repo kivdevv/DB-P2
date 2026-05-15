@@ -456,16 +456,14 @@ CREATE TABLE bitacora_propuesta (
 
 CREATE TABLE proponente_propuesta (
     id_proponente_propuesta SERIAL PRIMARY KEY,
-
     id_propuesta INT NOT NULL,
-
     id_asambleista INT NOT NULL,
-
     CONSTRAINT fk_proponente_propuesta
         FOREIGN KEY (id_propuesta)
         REFERENCES propuesta(id_propuesta),
-
-    -- FK de usuario pendiente hasta integrar modulo identidad
+    CONSTRAINT fk_proponente_asambleista
+        FOREIGN KEY (id_asambleista)
+        REFERENCES asambleista(id_asambleista)
 );
 
 -- Trigger para evitar traslape de nombramientos activos para el mismo sector
@@ -562,9 +560,7 @@ CREATE TABLE asistencia_sesion_plenaria (
 
     CONSTRAINT fk_estado_asistencia
         FOREIGN KEY (id_estado_asistencia)
-        REFERENCES catalogo_asistencia_sesion_comision(id_estado_asistencia),
-
-    -- FK usuario pendiente hasta integrar modulo identidad
+        REFERENCES catalogo_asistencia_sesion_comision(id_estado_asistencia)
 );
 
 CREATE OR REPLACE FUNCTION fn_vigencia_normativa()
@@ -762,6 +758,14 @@ VALUES
 ('Ausente'),
 ('Justificado');
 
+
+INSERT INTO asambleista (id_usuario, nombre_completo, cedula, correo, activo) VALUES
+    (NULL, 'Maria Gonzalez Perez',  '1-1234-5678', 'mgonzalez@tec.ac.cr',  TRUE),
+    (NULL, 'Carlos Rodriguez Mora', '1-2345-6789', 'crodriguez@tec.ac.cr', TRUE),
+    (NULL, 'Ana Jimenez Vargas',    '1-3456-7890', 'ajimenez@tec.ac.cr',   TRUE),
+    (NULL, 'Luis Hernandez Castro', '2-4567-8901', 'lhernandez@tec.ac.cr', TRUE),
+    (NULL, 'Patricia Solis Araya',  '3-5678-9012', 'psolis@tec.ac.cr',     TRUE);
+
 INSERT INTO sesiones (
     numero_sesion,
     fecha,
@@ -810,4 +814,158 @@ VALUES (
     1,
     1
 );
+
+-- =====================================================================
+-- SECCION 10: MOTOR DE TRAZABILIDAD (Issue #2)
+-- =====================================================================
+
+-- 10.1 Catalogo de tipos de comision
+CREATE TABLE catalogo_tipo_comision (
+    id_tipo_comision SERIAL PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL UNIQUE,
+    descripcion TEXT
+);
+
+INSERT INTO catalogo_tipo_comision (nombre, descripcion) VALUES
+    ('PERMANENTE', 'Comision permanente establecida por reglamento'),
+    ('ESPECIAL', 'Comision especial creada para un tema especifico'),
+    ('AD_HOC', 'Comision temporal de proposito unico');
+
+-- 10.2 Tabla maestra de comisiones
+CREATE TABLE comision (
+    id_comision SERIAL PRIMARY KEY,
+    nombre VARCHAR(150) NOT NULL,
+    id_tipo_comision INT NOT NULL,
+    fecha_creacion DATE NOT NULL DEFAULT CURRENT_DATE,
+    fecha_disolucion DATE,
+    activa BOOLEAN DEFAULT TRUE,
+    CONSTRAINT fk_comision_tipo
+        FOREIGN KEY (id_tipo_comision)
+        REFERENCES catalogo_tipo_comision(id_tipo_comision),
+    CONSTRAINT chk_comision_fechas
+        CHECK (fecha_disolucion IS NULL OR fecha_disolucion >= fecha_creacion)
+);
+
+-- 10.3 Sesiones de comision (paralela a sesiones plenarias, no modifica tabla sesiones de Jimena)
+CREATE TABLE sesion_comision (
+    id_sesion_comision SERIAL PRIMARY KEY,
+    id_comision INT NOT NULL,
+    numero_sesion INT NOT NULL,
+    fecha DATE NOT NULL,
+    link_acta TEXT,
+    quorum_requerido INT NOT NULL,
+    CONSTRAINT fk_sc_comision
+        FOREIGN KEY (id_comision)
+        REFERENCES comision(id_comision),
+    CONSTRAINT uq_sc_comision_numero
+        UNIQUE (id_comision, numero_sesion)
+);
+
+-- 10.4 Asistencia a sesiones de comision
+CREATE TABLE asistencia_sesion_comision (
+    id_asistencia_sc SERIAL PRIMARY KEY,
+    id_sesion_comision INT NOT NULL,
+    id_asambleista INT NOT NULL,
+    id_estado_asistencia INT NOT NULL,
+    CONSTRAINT fk_asc_sesion
+        FOREIGN KEY (id_sesion_comision)
+        REFERENCES sesion_comision(id_sesion_comision),
+    CONSTRAINT fk_asc_asambleista
+        FOREIGN KEY (id_asambleista)
+        REFERENCES asambleista(id_asambleista),
+    CONSTRAINT fk_asc_estado
+        FOREIGN KEY (id_estado_asistencia)
+        REFERENCES catalogo_asistencia_sesion_comision(id_estado_asistencia),
+    CONSTRAINT uq_asc_asambleista_sesion
+        UNIQUE (id_sesion_comision, id_asambleista)
+);
+
+-- 10.5 Tabla CORE de trazabilidad: participacion de asambleistas en propuestas
+CREATE TABLE participacion_propuesta (
+    id_participacion SERIAL PRIMARY KEY,
+    id_propuesta INT NOT NULL,
+    id_asambleista INT NOT NULL,
+    id_comision INT NULL,
+    id_etapa_propuesta INT NOT NULL,
+    fecha_participacion DATE NOT NULL DEFAULT CURRENT_DATE,
+    rol VARCHAR(50),
+    observaciones TEXT,
+    CONSTRAINT fk_pp_propuesta
+        FOREIGN KEY (id_propuesta)
+        REFERENCES propuesta(id_propuesta),
+    CONSTRAINT fk_pp_asambleista
+        FOREIGN KEY (id_asambleista)
+        REFERENCES asambleista(id_asambleista),
+    CONSTRAINT fk_pp_comision
+        FOREIGN KEY (id_comision)
+        REFERENCES comision(id_comision),
+    CONSTRAINT fk_pp_etapa
+        FOREIGN KEY (id_etapa_propuesta)
+        REFERENCES catalogo_etapas_propuestas(id_etapa_propuesta)
+);
+
+-- 10.6 Funcion que retorna la clausula legal segun etapa de procedencia
+CREATE OR REPLACE FUNCTION fn_clausula_etapa_procedencia(p_id_propuesta INT)
+RETURNS TEXT AS $$
+DECLARE
+    v_etapa_nombre VARCHAR;
+    v_clausula TEXT;
+BEGIN
+    SELECT cep.nombre INTO v_etapa_nombre
+    FROM propuesta p
+    INNER JOIN catalogo_etapas_propuestas cep
+        ON cep.id_etapa_propuesta = p.id_etapa_propuesta
+    WHERE p.id_propuesta = p_id_propuesta;
+
+    IF NOT FOUND THEN
+        RETURN 'Propuesta no encontrada.';
+    END IF;
+
+    CASE UPPER(v_etapa_nombre)
+        WHEN 'CONSEJO_INSTITUCIONAL' THEN
+            v_clausula := 'Propuesta originada en el Consejo Institucional conforme al Estatuto Organico.';
+        WHEN 'COMISION_PERMANENTE' THEN
+            v_clausula := 'Propuesta originada por dictamen de Comision Permanente.';
+        WHEN 'INICIATIVA_ASAMBLEA' THEN
+            v_clausula := 'Propuesta originada por iniciativa del 10% de la Asamblea Institucional.';
+        WHEN 'COMISION_ESPECIAL' THEN
+            v_clausula := 'Propuesta originada por Comision Especial conformada al efecto.';
+        ELSE
+            v_clausula := 'Procedencia no clasificada: ' || v_etapa_nombre || '. Verificar fuente.';
+    END CASE;
+
+    RETURN v_clausula;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 10.7 Vista de trazabilidad principal
+-- asambleista tiene nombre_completo segun definicion de Diana (Issue #9)
+CREATE OR REPLACE VIEW vw_trazabilidad_propuesta AS
+SELECT
+    p.id_propuesta,
+    p.titulo AS propuesta_titulo,
+    p.fecha_creacion,
+    cep.nombre AS etapa,
+    a.id_asambleista,
+    a.nombre_completo AS asambleista_nombre,
+    c.id_comision,
+    c.nombre AS comision_nombre,
+    pp.fecha_participacion,
+    pp.rol,
+    pp.observaciones,
+    fn_clausula_etapa_procedencia(p.id_propuesta) AS clausula_legal
+FROM participacion_propuesta pp
+INNER JOIN propuesta p ON p.id_propuesta = pp.id_propuesta
+INNER JOIN asambleista a ON a.id_asambleista = pp.id_asambleista
+INNER JOIN catalogo_etapas_propuestas cep ON cep.id_etapa_propuesta = pp.id_etapa_propuesta
+LEFT JOIN comision c ON c.id_comision = pp.id_comision
+ORDER BY p.id_propuesta, pp.fecha_participacion;
+
+
+
+-- 10.8 Datos semilla de comisiones para demo
+INSERT INTO comision (nombre, id_tipo_comision) VALUES
+    ('Comision de Estatuto Organico', 1),
+    ('Comision de Planificacion y Administracion', 1),
+    ('Comision Especial de Reforma 2025', 2);
 
