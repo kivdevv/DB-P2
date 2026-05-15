@@ -1,10 +1,14 @@
 require('dotenv').config();
 const express = require('express');
+const cors = require('cors');
+const asambleistaRoutes =
+require('./routes/asambleista.routes');
 const path = require('path');
 const AuthController = require('./controllers/AuthController');
 const { verificarJWT, verificarRol } = require('./middleware/autenticacion');
 
 const app = express();
+app.use(cors());
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
@@ -46,8 +50,7 @@ app.post('/auth/logout', verificarJWT, AuthController.logout);
 const normativaRoutes = require('./routes/normativa.routes');
 app.use(normativaRoutes);
 
-const trazabilidadRoutes = require('./routes/trazabilidad.routes');
-app.use('/api/trazabilidad', trazabilidadRoutes);
+app.use('/asambleistas', asambleistaRoutes);
 
 // Manejo de rutas no encontradas (404)
 app.use((req, res) => {
@@ -67,8 +70,11 @@ app.use((err, req, res, next) => {
     });
 });
 
+
+
 // Arrancar el motor
 app.listen(PORT, () => {
+    
     console.log(`Servidor AIR en http://localhost:${PORT}`);
     console.log(`Supabase: ${process.env.SUPABASE_URL ? 'Conectado' : 'ERROR: Falta SUPABASE_URL'}`);
     console.log(`JWT Secret: ${process.env.JWT_SECRET ? 'Configurado' : 'FALTA JWT_SECRET'}`);
