@@ -130,11 +130,11 @@ CREATE TABLE proponente_propuesta (
 
     id_propuesta INT NOT NULL,
 
-    id_usuario INT NOT NULL,
+    id_asambleista INT NOT NULL,
 
     CONSTRAINT fk_proponente_propuesta
         FOREIGN KEY (id_propuesta)
-        REFERENCES propuesta(id_propuesta)
+        REFERENCES propuesta(id_propuesta),
 
     -- FK de usuario pendiente hasta integrar modulo identidad
 );
@@ -173,7 +173,7 @@ CREATE TABLE asistencia_sesion_plenaria (
 
     id_sesion INT NOT NULL,
 
-    id_usuario INT NOT NULL,
+    id_asambleista INT NOT NULL,
 
     id_estado_asistencia INT NOT NULL,
 
@@ -183,7 +183,7 @@ CREATE TABLE asistencia_sesion_plenaria (
 
     CONSTRAINT fk_estado_asistencia
         FOREIGN KEY (id_estado_asistencia)
-        REFERENCES catalogo_asistencia_sesion_comision(id_estado_asistencia)
+        REFERENCES catalogo_asistencia_sesion_comision(id_estado_asistencia),
 
     -- FK usuario pendiente hasta integrar modulo identidad
 );
@@ -371,7 +371,7 @@ VALUES (
 );
 INSERT INTO asistencia_sesion_plenaria (
     id_sesion,
-    id_usuario,
+    id_asambleista,
     id_estado_asistencia
 )
 VALUES (
@@ -382,7 +382,7 @@ VALUES (
 
 INSERT INTO proponente_propuesta (
     id_propuesta,
-    id_usuario
+    id_asambleista
 )
 VALUES (
     1,
