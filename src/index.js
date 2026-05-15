@@ -48,8 +48,9 @@ app.get('/auth/perfil', verificarJWT, AuthController.obtenerPerfil);
 app.post('/auth/logout', verificarJWT, AuthController.logout);
 
 const normativaRoutes = require('./routes/normativa.routes');
+const catalogoRoutes = require('./routes/catalogo.routes');
 app.use(normativaRoutes);
-
+app.use(catalogoRoutes);
 app.use('/asambleistas', asambleistaRoutes);
 
 // Manejo de rutas no encontradas (404)
