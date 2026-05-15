@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificado de Trazabilidad - AIR</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            padding: 2rem 1rem;
+            color: #1a1a1a;
+        }
+
+        .controles-impresion {
+            max-width: 900px;
+            margin: 0 auto 1rem;
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .controles-impresion button {
+            font-family: inherit;
+            font-size: 0.9rem;
+            padding: 0.4rem 1rem;
+            border: 1px solid #333;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .controles-impresion button:hover { background: #f0f0f0; }
+
+        .documento {
+            background: #fff;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 60px;
+            border: 1px solid #ccc;
+        }
+
+        .encabezado {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+        }
+
+        .encabezado h1 {
+            font-size: 1.3rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .encabezado h2 {
+            font-size: 1rem;
+            font-weight: normal;
+            margin-bottom: 0.5rem;
+        }
+
+        .encabezado .numero-cert {
+            font-size: 0.85rem;
+            color: #555;
+        }
+
+        .cuerpo {
+            line-height: 1.9;
+            text-align: justify;
+            margin-bottom: 1.5rem;
+        }
+
+        .cuerpo p {
+            margin-bottom: 1rem;
+        }
+
+        .clausula-legal {
+            background: #f9f9e8;
+            border-left: 3px solid #999;
+            padding: 0.75rem 1rem;
+            font-style: italic;
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+        }
+
+        .seccion-participaciones {
+            margin-bottom: 2rem;
+        }
+
+        .seccion-participaciones h3 {
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0.3rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+            margin-top: 0.5rem;
+        }
+
+        th {
+            background: #222;
+            color: #fff;
+            padding: 0.55rem 0.7rem;
+            text-align: left;
+            font-weight: normal;
+        }
+
+        td {
+            padding: 0.5rem 0.7rem;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .pie {
+            margin-top: 60px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+        }
+
+        .firma {
+            text-align: center;
+            width: 220px;
+        }
+
+        .firma .linea {
+            border-top: 1px solid #333;
+            margin-bottom: 0.4rem;
+        }
+
+        .mensaje {
+            color: #888;
+            font-style: italic;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .error { color: #c00; }
+
+        @media print {
+            body { background: #fff; padding: 0; }
+            .controles-impresion { display: none; }
+            .documento { border: none; padding: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="controles-impresion">
+        <button onclick="history.back()">&#8592; Volver</button>
+        <button onclick="window.print()">Imprimir / Guardar PDF</button>
+    </div>
+
+    <div class="documento" id="documento">
+        <p class="mensaje">Cargando certificado...</p>
+    </div>
+
+    <script>
+        function esc(v) {
+            return String(v ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function formatFecha(f) {
+            if (!f) return '-';
+            const d = new Date(f + 'T00:00:00');
+            return d.toLocaleDateString('es-CR', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
+
+        function idDesdeUrl() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('id');
+        }
+
+        function numeroCert(id) {
+            const now = new Date();
+            return 'DAIR-TRAZ-' + String(id).padStart(4, '0') + '-' + now.getFullYear();
+        }
+
+        async function cargarCertificado() {
+            const id = idDesdeUrl();
+            const doc = document.getElementById('documento');
+
+            if (!id) {
+                doc.innerHTML = '<p class="mensaje error">No se especifico una propuesta. Use ?id=N en la URL.</p>';
+                return;
+            }
+
+            try {
+                const [respTraz, respClausula] = await Promise.all([
+                    fetch('/api/trazabilidad/propuesta/' + id),
+                    fetch('/api/trazabilidad/clausula/' + id)
+                ]);
+
+                if (respTraz.status === 404) {
+                    doc.innerHTML = '<p class="mensaje">Esta propuesta no tiene participaciones registradas.</p>';
+                    return;
+                }
+                if (!respTraz.ok) throw new Error('Error ' + respTraz.status);
+
+                const filas = await respTraz.json();
+                const { clausula_legal } = respClausula.ok ? await respClausula.json() : { clausula_legal: '' };
+                const primera = filas[0];
+                const hoy = new Date().toLocaleDateString('es-CR', { year: 'numeric', month: 'long', day: 'numeric' });
+
+                let html = '';
+
+                html += '<div class="encabezado">';
+                html += '<h1>Instituto Tecnologico de Costa Rica</h1>';
+                html += '<h2>Asamblea Institucional Representativa</h2>';
+                html += '<p class="numero-cert">Certificacion ' + esc(numeroCert(id)) + '</p>';
+                html += '</div>';
+
+                html += '<div class="cuerpo">';
+                html += '<p>La Secretaria de la Asamblea Institucional Representativa del Instituto Tecnologico de Costa Rica certifica que la propuesta denominada <strong>' + esc(primera.propuesta_titulo) + '</strong> (identificador interno #' + esc(primera.id_propuesta) + '), con fecha de creacion ' + formatFecha(primera.fecha_creacion) + ', ha sido procesada conforme al siguiente recorrido institucional.</p>';
+
+                if (clausula_legal) {
+                    html += '<div class="clausula-legal">' + esc(clausula_legal) + '</div>';
+                }
+                html += '</div>';
+
+                html += '<div class="seccion-participaciones">';
+                html += '<h3>Detalle de participacion por etapa</h3>';
+                html += '<table>';
+                html += '<thead><tr><th>Etapa</th><th>Asambleista</th><th>Comision</th><th>Fecha</th><th>Rol</th></tr></thead>';
+                html += '<tbody>';
+                for (const f of filas) {
+                    html += '<tr>';
+                    html += '<td>' + esc(f.etapa) + '</td>';
+                    html += '<td>' + esc(f.asambleista_nombre) + '</td>';
+                    html += '<td>' + esc(f.comision_nombre ?? '-') + '</td>';
+                    html += '<td>' + formatFecha(f.fecha_participacion) + '</td>';
+                    html += '<td>' + esc(f.rol ?? '-') + '</td>';
+                    html += '</tr>';
+                }
+                html += '</tbody></table>';
+                html += '</div>';
+
+                html += '<p style="font-size:0.85rem; color:#555;">Se extiende la presente certificacion en San Jose, Costa Rica, el ' + hoy + ', conforme al articulo 301 de la Ley General de la Administracion Publica.</p>';
+
+                html += '<div class="pie">';
+                html += '<div class="firma"><div class="linea"></div><p>Secretaria AIR</p><p style="font-size:0.8rem;color:#666;">Instituto Tecnologico de Costa Rica</p></div>';
+                html += '<div style="font-size:0.8rem;color:#888;align-self:flex-end;">Generado: ' + hoy + '</div>';
+                html += '</div>';
+
+                doc.innerHTML = html;
+
+            } catch {
+                doc.innerHTML = '<p class="mensaje error">No se pudo cargar el certificado.</p>';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', cargarCertificado);
+    </script>
+</body>
+</html>
