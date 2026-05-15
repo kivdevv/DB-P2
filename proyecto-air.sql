@@ -10,14 +10,11 @@ CREATE TABLE IF NOT EXISTS usuario (
     id_usuario UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     correo VARCHAR(100) NOT NULL UNIQUE,
     contraseña_hash VARCHAR(255) NOT NULL,
-    nombre_completo VARCHAR(150) NOT NULL,
-    cedula VARCHAR(20),
     estado VARCHAR(20) NOT NULL DEFAULT 'Activo' CHECK (estado IN ('Activo', 'Inactivo', 'Suspendido')),
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     fecha_ultimo_login TIMESTAMP,
-    CONSTRAINT uk_usuario_correo UNIQUE(correo),
-    CONSTRAINT uk_usuario_cedula UNIQUE(cedula)
+    CONSTRAINT uk_usuario_correo UNIQUE(correo)
 );
 
 -- Tabla: Roles institucionales
@@ -107,7 +104,6 @@ CREATE TABLE IF NOT EXISTS intento_login_fallido (
 );
 
 CREATE INDEX idx_usuario_correo ON usuario(correo);
-CREATE INDEX idx_usuario_cedula ON usuario(cedula);
 CREATE INDEX idx_usuario_estado ON usuario(estado);
 CREATE INDEX idx_usuario_rol_usuario ON usuario_rol(id_usuario);
 CREATE INDEX idx_usuario_rol_rol ON usuario_rol(id_rol);
