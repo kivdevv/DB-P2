@@ -46,6 +46,9 @@ app.post('/auth/logout', verificarJWT, AuthController.logout);
 const normativaRoutes = require('./routes/normativa.routes');
 app.use(normativaRoutes);
 
+const trazabilidadRoutes = require('./routes/trazabilidad.routes');
+app.use('/api/trazabilidad', trazabilidadRoutes);
+
 // Manejo de rutas no encontradas (404)
 app.use((req, res) => {
     res.status(404).json({
