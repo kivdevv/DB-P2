@@ -1,20 +1,20 @@
 {
-  "name": "db-p2-air",
+  "name": "db-p2",
   "version": "0.1.0",
   "private": true,
-  "description": "Sistema de Gestión Legislativa AIR - Proyecto BD II TEC",
+  "description": "Sistema de Gestion Legislativa AIR",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0",
-    "bcrypt": "^5.1.1",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2"
+    "@supabase/supabase-js": "^2.105.4",
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2"
+    "nodemon": "^3.1.14"
   }
 }

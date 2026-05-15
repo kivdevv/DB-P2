@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<<<<<<< HEAD
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Árbol Normativo</title>
+
+    <style>
+
+        body{
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            padding: 40px;
+        }
+
+        .contenedor{
+            background-color: white;
+            padding: 40px;
+            border-radius: 10px;
+            max-width: 900px;
+            margin: auto;
+        }
+
+        h1{
+            margin-bottom: 30px;
+        }
+
+        ul{
+            list-style-type: none;
+        }
+
+        li{
+            margin: 10px 0;
+        }
+
+        .nivel{
+            margin-left: 30px;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="contenedor">
+
+        <h1>
+            Reglamento General - Árbol Normativo
+        </h1>
+
+        <ul>
+
+            <li>
+
+                <strong>
+                    Capítulo I - Disposiciones Generales
+                </strong>
+
+                <ul class="nivel">
+
+                    <li>
+                        Artículo 1 - Objeto del reglamento
+                    </li>
+
+                    <li>
+                        Artículo 2 - Alcance institucional
+                    </li>
+
+                </ul>
+
+            </li>
+
+            <li>
+
+                <strong>
+                    Capítulo II - Sesiones
+                </strong>
+
+                <ul class="nivel">
+
+                    <li>
+                        Artículo 3 - Convocatorias
+                    </li>
+
+                    <li>
+                        Artículo 4 - Quórum
+                    </li>
+
+                </ul>
+
+            </li>
+
+        </ul>
+
+    </div>
+
+</body>
+</html>
+=======
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compilador Normativo - AIR</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Georgia, Cambria, 'Times New Roman', serif;
+            background: #fff;
+            color: #1a1a1a;
+            padding: 2rem 1rem;
+        }
+
+        .contenedor-principal {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+
+        .subtitulo {
+            font-size: 0.9rem;
+            color: #555;
+            margin-bottom: 2rem;
+        }
+
+        .controles {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        select {
+            font-family: inherit;
+            font-size: 0.95rem;
+            padding: 0.4rem 0.6rem;
+            border: 1px solid #ccc;
+            background: #fff;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        button {
+            font-family: inherit;
+            font-size: 0.95rem;
+            padding: 0.4rem 1rem;
+            border: 1px solid #333;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        button:hover { background: #f0f0f0; }
+
+        #contenedor-arbol { margin-top: 1rem; }
+
+        .encabezado-reglamento {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .mensaje-estado {
+            color: #666;
+            font-style: italic;
+        }
+
+        .nodo {
+            cursor: pointer;
+            padding: 0.4rem 0.5rem;
+            border-radius: 2px;
+        }
+
+        .nodo:hover { background: #f5f5f5; }
+
+        .etiqueta {
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .contenido {
+            margin-top: 0.2rem;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .nodo.nivel-titulo    { margin-left: 0;    margin-bottom: 0.75rem; }
+        .nodo.nivel-capitulo  { margin-left: 20px; margin-bottom: 0.5rem; }
+        .nodo.nivel-articulo  { margin-left: 40px; margin-bottom: 0.4rem; }
+        .nodo.nivel-inciso    { margin-left: 60px; margin-bottom: 0.3rem; }
+        .nodo.nivel-subinciso { margin-left: 80px; margin-bottom: 0.3rem; }
+    </style>
+</head>
+<body>
+    <div class="contenedor-principal">
+        <h1>Compilador Normativo</h1>
+        <p class="subtitulo">Asamblea Institucional Representativa - TEC</p>
+
+        <div class="controles">
+            <select id="selector-reglamento">
+                <option value="">Cargando reglamentos...</option>
+            </select>
+            <button id="btn-cargar">Cargar reglamento</button>
+        </div>
+
+        <div id="contenedor-arbol"></div>
+    </div>
+
+    <script>
+        function escapeHtml(texto) {
+            return String(texto)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function claseNivel(nivel) {
+            if (!nivel) return '';
+            const mapa = {
+                'titulo':    'nivel-titulo',
+                'capitulo':  'nivel-capitulo',
+                'articulo':  'nivel-articulo',
+                'inciso':    'nivel-inciso',
+                'sub-inciso': 'nivel-subinciso',
+            };
+            return mapa[nivel.toLowerCase()] ?? '';
+        }
+
+        function crearNodo(nodo) {
+            const div = document.createElement('div');
+            div.className = 'nodo ' + claseNivel(nodo.nivel);
+            div.title = 'Ver detalle y trazabilidad';
+
+            const etiqueta = document.createElement('span');
+            etiqueta.className = 'etiqueta';
+            etiqueta.textContent = (nodo.nivel ?? '') + ' ' + nodo.numero_etiqueta;
+
+            const contenido = document.createElement('p');
+            contenido.className = 'contenido';
+            contenido.textContent = nodo.contenido_texto;
+
+            div.appendChild(etiqueta);
+            div.appendChild(contenido);
+
+            div.addEventListener('click', (e) => {
+                e.stopPropagation();
+                window.location.href = 'compilador-visor.view.html?id=' + nodo.id_elemento;
+            });
+
+            for (const hijo of nodo.hijos) {
+                div.appendChild(crearNodo(hijo));
+            }
+
+            return div;
+        }
+
+        async function cargarReglamentos() {
+            const selector = document.getElementById('selector-reglamento');
+            try {
+                const resp = await fetch('/api/reglamentos');
+                if (!resp.ok) throw new Error('Error ' + resp.status);
+                const lista = await resp.json();
+
+                selector.innerHTML = '';
+                const opcionVacia = document.createElement('option');
+                opcionVacia.value = '';
+                opcionVacia.textContent = '-- Seleccione un reglamento --';
+                selector.appendChild(opcionVacia);
+
+                for (const reg of lista) {
+                    const opt = document.createElement('option');
+                    opt.value = reg.id_reglamento;
+                    opt.textContent = reg.sigla + ' - ' + reg.nombre_normativa;
+                    selector.appendChild(opt);
+                }
+            } catch {
+                selector.innerHTML = '<option value="">Error al cargar reglamentos</option>';
+            }
+        }
+
+        async function cargarArbol() {
+            const selector = document.getElementById('selector-reglamento');
+            const contenedor = document.getElementById('contenedor-arbol');
+            const idReglamento = selector.value;
+
+            if (!idReglamento) {
+                contenedor.innerHTML = '';
+                const msg = document.createElement('p');
+                msg.className = 'mensaje-estado';
+                msg.textContent = 'Seleccione un reglamento';
+                contenedor.appendChild(msg);
+                return;
+            }
+
+            contenedor.innerHTML = '';
+            const cargando = document.createElement('p');
+            cargando.className = 'mensaje-estado';
+            cargando.textContent = 'Cargando...';
+            contenedor.appendChild(cargando);
+
+            try {
+                const resp = await fetch('/api/reglamentos/' + idReglamento + '/arbol');
+                if (!resp.ok) throw new Error('Error ' + resp.status);
+                const { reglamento, raices } = await resp.json();
+
+                contenedor.innerHTML = '';
+
+                const encabezado = document.createElement('div');
+                encabezado.className = 'encabezado-reglamento';
+                encabezado.textContent = reglamento.sigla + ' - ' + reglamento.nombre_normativa;
+                contenedor.appendChild(encabezado);
+
+                if (raices.length === 0) {
+                    const vacio = document.createElement('p');
+                    vacio.className = 'mensaje-estado';
+                    vacio.textContent = 'Este reglamento no tiene elementos vigentes registrados.';
+                    contenedor.appendChild(vacio);
+                    return;
+                }
+
+                for (const raiz of raices) {
+                    contenedor.appendChild(crearNodo(raiz));
+                }
+            } catch {
+                contenedor.innerHTML = '';
+                const err = document.createElement('p');
+                err.className = 'mensaje-estado';
+                err.textContent = 'No se pudo cargar el reglamento';
+                contenedor.appendChild(err);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarReglamentos();
+            document.getElementById('btn-cargar').addEventListener('click', cargarArbol);
+        });
+    </script>
+</body>
+</html>
+>>>>>>> origin/develop
