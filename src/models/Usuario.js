@@ -5,12 +5,12 @@ class Usuario {
 
     /**
      * Crear nuevo usuario (Registro)
-     * @param {Object} datos - {correo, contraseña, nombre_completo, cedula, rol}
+     * @param {Object} datos - {correo, contraseña, rol}
      */
     static async crearUsuario(datos) {
         try {
-            if (!datos.correo || !datos.contraseña || !datos.nombre_completo) {
-                throw new Error('Campos requeridos: correo, contraseña, nombre_completo');
+            if (!datos.correo || !datos.contraseña) {
+                throw new Error('Campos requeridos: correo, contraseña');
             }
 
             const regexCorreo = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -35,8 +35,6 @@ class Usuario {
                 .insert({
                     correo: datos.correo.toLowerCase(),
                     contraseña_hash: contraseña_hash,
-                    nombre_completo: datos.nombre_completo,
-                    cedula: datos.cedula || null,
                     estado: 'Activo'
                 })
                 .select();
@@ -56,8 +54,7 @@ class Usuario {
                 exito: true,
                 usuario: {
                     id: data[0].id_usuario,
-                    correo: data[0].correo,
-                    nombre: data[0].nombre_completo
+                    correo: data[0].correo
                 }
             };
 
@@ -204,7 +201,6 @@ class Usuario {
                 .select(`
                     id_usuario,
                     correo,
-                    nombre_completo,
                     estado,
                     fecha_creacion,
                     usuario_rol (
@@ -218,7 +214,6 @@ class Usuario {
             return data.map(u => ({
                 id: u.id_usuario,
                 correo: u.correo,
-                nombre: u.nombre_completo,
                 estado: u.estado,
                 roles: u.usuario_rol.map(ur => ur.rol.nombre_rol),
                 fecha_creacion: u.fecha_creacion
