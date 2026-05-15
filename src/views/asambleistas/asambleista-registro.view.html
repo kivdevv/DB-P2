@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Registro Asambleista</title>
+</head>
+
+<body>
+
+    <h1>Registro de Asambleista</h1>
+
+    <form id="formAsambleista">
+
+        <h2>Datos del Asambleísta</h2>
+
+        <label>Nombre Completo</label>
+        <br>
+
+        <input 
+            type="text"
+            id="nombre_completo"
+            name="nombre_completo"
+            required>
+
+        <br><br>
+
+        <label>Cédula</label>
+        <br>
+
+        <input 
+            type="text"
+            name="cedula"
+            id="cedula"
+            placeholder="1-1234-5678"
+            pattern="[0-9]-[0-9]{4}-[0-9]{4}"
+            required>
+
+        <br><br>
+
+        <label>Correo</label>
+        <br>
+
+        <input 
+            type="email"
+            name="correo"
+            id="correo"
+            required>
+
+        <br><br>
+
+        <label>Foto</label>
+        <br>
+
+        <input 
+            type="file"
+            name="foto"
+            accept="image/*">
+
+        <br><br>
+
+        <h2>Información del Nombramiento</h2>
+
+        <label>Sector</label>
+        <br>
+
+        <select 
+            name="sector"
+            required>
+
+            <option value="">
+                Seleccione
+            </option>
+
+            <option>
+                Docente
+            </option>
+
+            <option>
+                Administrativo
+            </option>
+
+            <option>
+                Estudiantil
+            </option>
+
+        </select>
+
+        <br><br>
+
+        <label>Fecha Inicio</label>
+        <br>
+
+        <input 
+            type="date"
+            name="fecha_inicio"
+            required>
+
+        <br><br>
+
+        <label>Fecha Fin</label>
+        <br>
+
+        <input 
+            type="date"
+            name="fecha_fin">
+
+        <br><br>
+
+        <button type="submit">
+            Guardar
+        </button>
+
+    </form>
+
+</body>
+
+</html>
