@@ -6,7 +6,7 @@ class AuthController {
 
     static async registro(req, res) {
         try {
-            const { correo, contraseña, nombre_completo } = req.body;
+            const { correo, contraseña} = req.body;
 
             const es_correo_valido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo);
             if (!es_correo_valido) {
@@ -24,7 +24,6 @@ class AuthController {
             const resultado = await Usuario.crearUsuario({
                 correo,
                 contraseña,
-                nombre_completo,
                 rol: 'Consulta' 
             });
 
@@ -50,7 +49,6 @@ class AuthController {
                 usuario: {
                     id: resultado.usuario.id_usuario,
                     correo: resultado.usuario.correo,
-                    nombre: resultado.usuario.nombre_completo,
                     rol: resultado.usuario.rol
                 }
             });
@@ -101,7 +99,6 @@ class AuthController {
                 usuario: {
                     id: usuario.id_usuario,
                     correo: usuario.correo,
-                    nombre: usuario.nombre_completo,
                     rol: usuario.rol
                 }
             });
@@ -130,7 +127,6 @@ class AuthController {
                 usuario: {
                     id: datos.id_usuario,
                     correo: datos.correo,
-                    nombre: datos.nombre_completo,
                     rol: datos.rol,
                     estado: datos.estado
                 }
@@ -140,6 +136,40 @@ class AuthController {
             res.status(500).json({
                 error: err.message
             });
+        }
+    }
+
+    static async cambiarContraseña(req, res) {
+        try {
+            const { contraseña_actual, contraseña_nueva } = req.body;
+            const id_usuario = req.usuario.id_usuario;
+
+            const resultado = await Usuario.cambiarContraseña(
+                id_usuario,
+                contraseña_actual,
+                contraseña_nueva
+            );
+
+            return res.status(200).json(resultado);
+
+        } catch (err) {
+            res.status(400).json({ error: err.message });
+        }
+    }
+
+    static async obtenerPermisos(req, res) {
+        try {
+            const id_usuario = req.usuario.id_usuario;
+            const permisos = await Usuario.obtenerPermisos(id_usuario);
+
+            return res.status(200).json({
+                id_usuario,
+                permisos,
+                total: permisos.length
+            });
+
+        } catch (err) {
+            res.status(500).json({ error: err.message });
         }
     }
 }
