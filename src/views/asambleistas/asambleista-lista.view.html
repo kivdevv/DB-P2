@@ -19,6 +19,7 @@ margin:20px;
 table{
 width:100%;
 border-collapse: collapse;
+margin-top:20px;
 }
 
 th, td{
@@ -52,6 +53,7 @@ width:250px;
 
 button{
 padding:8px;
+cursor:pointer;
 }
 
 img{
@@ -59,6 +61,11 @@ width:60px;
 height:60px;
 object-fit:cover;
 border-radius:50%;
+}
+
+.mensaje{
+margin-top:20px;
+font-weight:bold;
 }
 
 </style>
@@ -73,16 +80,21 @@ Lista de Asambleistas
 
 <input 
 type="text"
-name="busqueda"
+id="busqueda"
 placeholder="Buscar por nombre o cédula">
 
-<button>
+<button id="btnConsultar">
 Consultar
 </button>
 
-<br><br>
+<div
+class="mensaje"
+id="mensaje">
+</div>
 
 <table>
+
+<thead>
 
 <tr>
 
@@ -103,80 +115,134 @@ Correo
 </th>
 
 <th>
-Sector
-</th>
-
-<th>
-Estado del Nombramiento
+Estado
 </th>
 
 </tr>
 
-<tr>
+</thead>
 
-<td>
-<img src="https://via.placeholder.com/60" alt="Foto">
-</td>
+<tbody id="tablaAsambleistas">
 
-<td>
-Diana Solano
-</td>
-
-<td>
-1-1234-5678
-</td>
-
-<td>
-diana@gmail.com
-</td>
-
-<td>
-Docente
-</td>
-
-<td>
-
-<span class="vigente">
-VIGENTE
-</span>
-
-</td>
-
-</tr>
-
-<tr>
-
-<td>
-<img src="https://via.placeholder.com/60" alt="Foto">
-</td>
-
-<td>
-Juan Pérez
-</td>
-
-<td>
-2-5678-1234
-</td>
-
-<td>
-juan@gmail.com
-</td>
-
-<td>
-Estudiantil
-</td>
-
-<td>
-
-<span class="inactivo">
-INACTIVO
-</span>
-
-</td>
-
-</tr>
+</tbody>
 
 </table>
+
+<script>
+
+const tabla =
+document.getElementById(
+'tablaAsambleistas'
+);
+
+const mensaje =
+document.getElementById(
+'mensaje'
+);
+
+const btnConsultar =
+document.getElementById(
+'btnConsultar'
+);
+
+async function cargarAsambleistas(){
+
+    try {
+
+        btnConsultar.disabled = true;
+
+        btnConsultar.textContent =
+        'Consultando...';
+
+        mensaje.textContent = '';
+
+        const busqueda =
+        document.getElementById(
+        'busqueda'
+        ).value;
+
+
+        const respuesta =
+        await fetch(
+`http://localhost:3000/asambleistas`
+        );
+
+        const datos =
+        await respuesta.json();
+
+        tabla.innerHTML = '';
+
+        if(datos.length === 0){
+
+            mensaje.textContent =
+            'No se encontraron asambleistas';
+
+            return;
+        }
+
+        datos.forEach(function(asambleista){
+
+            const estado =
+            asambleista.activo
+            ? '<span class="vigente">VIGENTE</span>'
+            : '<span class="inactivo">INACTIVO</span>';
+
+            const foto =
+            asambleista.foto_url
+            ? asambleista.foto_url
+            : 'https://via.placeholder.com/60';
+
+            tabla.innerHTML += `
+                <tr>
+
+                    <td>
+                        <img src="${foto}">
+                    </td>
+
+                    <td>
+                        ${asambleista.nombre_completo}
+                    </td>
+
+                    <td>
+                        ${asambleista.cedula}
+                    </td>
+
+                    <td>
+                        ${asambleista.correo}
+                    </td>
+
+                    <td>
+                        ${estado}
+                    </td>
+
+                </tr>
+            `;
+        });
+
+    } catch(error){
+
+        console.error(error);
+
+        mensaje.textContent =
+        'Error al consultar asambleistas';
+
+    } finally {
+
+        btnConsultar.disabled = false;
+
+        btnConsultar.textContent =
+        'Consultar';
+    }
+}
+
+btnConsultar.addEventListener(
+'click',
+cargarAsambleistas
+);
+
+cargarAsambleistas();
+
+</script>
 
 </body>
 </html>

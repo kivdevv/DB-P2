@@ -2,116 +2,281 @@
 <html lang="es">
 
 <head>
-    <meta charset="UTF-8">
-    <title>Registro Asambleista</title>
+
+<meta charset="UTF-8">
+
+<title>
+Registro Asambleista
+</title>
+
+<style>
+
+body{
+font-family: Arial;
+margin:20px;
+}
+
+form{
+max-width:600px;
+}
+
+input,
+select,
+button{
+width:100%;
+padding:10px;
+margin-top:5px;
+margin-bottom:15px;
+}
+
+button{
+cursor:pointer;
+}
+
+.mensaje{
+margin-top:20px;
+font-weight:bold;
+}
+
+.error{
+color:red;
+}
+
+.exito{
+color:green;
+}
+
+</style>
+
 </head>
 
 <body>
 
-    <h1>Registro de Asambleista</h1>
+<h1>
+Registro de Asambleista
+</h1>
 
-    <form id="formAsambleista">
+<form id="formAsambleista">
 
-        <h2>Datos del Asambleísta</h2>
+<label>
+Nombre Completo
+</label>
 
-        <label>Nombre Completo</label>
-        <br>
+<input
+type="text"
+id="nombre_completo"
+required>
 
-        <input 
-            type="text"
-            id="nombre_completo"
-            name="nombre_completo"
-            required>
+<label>
+Cédula
+</label>
 
-        <br><br>
+<input
+type="text"
+id="cedula"
+placeholder="1-1234-5678"
+pattern="[0-9]-[0-9]{4}-[0-9]{4}"
+required>
 
-        <label>Cédula</label>
-        <br>
+<label>
+Correo
+</label>
 
-        <input 
-            type="text"
-            name="cedula"
-            id="cedula"
-            placeholder="1-1234-5678"
-            pattern="[0-9]-[0-9]{4}-[0-9]{4}"
-            required>
+<input
+type="email"
+id="correo"
+required>
 
-        <br><br>
+<label>
+Sector
+</label>
 
-        <label>Correo</label>
-        <br>
+<select
+id="sector"
+required>
 
-        <input 
-            type="email"
-            name="correo"
-            id="correo"
-            required>
+<option value="">
+Seleccione
+</option>
 
-        <br><br>
+</select>
 
-        <label>Foto</label>
-        <br>
+<label>
+Fecha Inicio
+</label>
 
-        <input 
-            type="file"
-            name="foto"
-            accept="image/*">
+<input
+type="date"
+id="fecha_inicio"
+required>
 
-        <br><br>
+<label>
+Fecha Fin
+</label>
 
-        <h2>Información del Nombramiento</h2>
+<input
+type="date"
+id="fecha_fin">
 
-        <label>Sector</label>
-        <br>
+<button type="submit">
+Guardar Asambleista
+</button>
 
-        <select 
-            name="sector"
-            required>
+</form>
 
-            <option value="">
-                Seleccione
-            </option>
+<div
+class="mensaje"
+id="mensaje">
+</div>
 
-            <option>
-                Docente
-            </option>
+<script>
 
-            <option>
-                Administrativo
-            </option>
+const form =
+document.getElementById(
+'formAsambleista'
+);
 
-            <option>
-                Estudiantil
-            </option>
+const mensaje =
+document.getElementById(
+'mensaje'
+);
 
-        </select>
+const selectSector =
+document.getElementById(
+'sector'
+);
 
-        <br><br>
+async function cargarSectores(){
 
-        <label>Fecha Inicio</label>
-        <br>
+    try {
 
-        <input 
-            type="date"
-            name="fecha_inicio"
-            required>
+        const respuesta =
+        await fetch(
+'http://localhost:3000/catalogos/sectores'
+        );
 
-        <br><br>
+        const sectores =
+        await respuesta.json();
 
-        <label>Fecha Fin</label>
-        <br>
+        sectores.forEach(function(sector){
 
-        <input 
-            type="date"
-            name="fecha_fin">
+            selectSector.innerHTML += `
+                <option value="${sector.nombre}">
+                    ${sector.nombre}
+                </option>
+            `;
+        });
 
-        <br><br>
+    } catch(error){
 
-        <button type="submit">
-            Guardar
-        </button>
+        console.error(error);
 
-    </form>
+        mensaje.textContent =
+        'Error al cargar sectores';
+
+        mensaje.className =
+        'mensaje error';
+    }
+}
+
+form.addEventListener(
+'submit',
+async function(event){
+
+    event.preventDefault();
+
+    try {
+
+        mensaje.textContent = '';
+
+        const fechaInicio =
+        document.getElementById(
+        'fecha_inicio'
+        ).value;
+
+        const fechaFin =
+        document.getElementById(
+        'fecha_fin'
+        ).value;
+
+        if(
+            fechaFin &&
+            fechaInicio > fechaFin
+        ){
+
+            mensaje.textContent =
+            'La fecha inicio no puede ser mayor a la fecha fin';
+
+            mensaje.className =
+            'mensaje error';
+
+            return;
+        }
+
+        const datos = {
+
+            nombre_completo:
+            document.getElementById(
+            'nombre_completo'
+            ).value,
+
+            cedula:
+            document.getElementById(
+            'cedula'
+            ).value,
+
+            correo:
+            document.getElementById(
+            'correo'
+            ).value,
+
+            activo: true
+        };
+
+        const respuesta =
+        await fetch(
+'http://localhost:3000/asambleistas',
+        {
+            method:'POST',
+
+            headers:{
+                'Content-Type':
+                'application/json'
+            },
+
+            body: JSON.stringify(datos)
+        });
+
+        if(!respuesta.ok){
+
+            throw new Error(
+                'Error al registrar'
+            );
+        }
+
+        mensaje.textContent =
+        'Asambleista registrado correctamente';
+
+        mensaje.className =
+        'mensaje exito';
+
+        form.reset();
+
+    } catch(error){
+
+        console.error(error);
+
+        mensaje.textContent =
+        'Error al registrar asambleista';
+
+        mensaje.className =
+        'mensaje error';
+    }
+});
+
+cargarSectores();
+
+</script>
 
 </body>
 
