@@ -6,6 +6,16 @@ const SecretariaController =
 require('../controllers/SecretariaController');
 
 router.get(
+    '/',
+    SecretariaController.listarAsambleistas
+);
+
+router.post(
+    '/',
+    SecretariaController.crearAsambleista
+);
+
+router.get(
     '/buscar',
     SecretariaController.buscarAsambleistas
 );
