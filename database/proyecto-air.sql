@@ -1079,6 +1079,8 @@ EXECUTE PROCEDURE fn_generar_folio_unico();
 
 --INICIO ISSUE 14
 
+-- tg_traslape_sector NO SE AGREGA, DIANA YA LO CREO
+
 -- Tabla: Nombramiento (Período de un asambleísta en un sector)
 CREATE TABLE IF NOT EXISTS sector (
 id_sector UUID PRIMARY KEY DEFAULT gen_random_uuid(),
