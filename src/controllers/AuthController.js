@@ -67,9 +67,7 @@ class AuthController {
             const usuario = await Usuario.obtenerPorCorreo(correo);
 
             if (!usuario) {
-                return res.status(401).json({
-                    error: 'Correo o contraseña incorrecta'
-                });
+                return res.status(401).json({ error: 'Correo o contraseña incorrecta' });
             }
 
             const contraseña_valida = await Usuario.validarContraseña(
@@ -78,16 +76,17 @@ class AuthController {
             );
 
             if (!contraseña_valida) {
-                return res.status(401).json({
-                    error: 'Correo o contraseña incorrecta'
-                });
+                return res.status(401).json({ error: 'Correo o contraseña incorrecta' });
             }
+
+            const roles = await Usuario.obtenerRoles(usuario.id_usuario);
+            const rol_usuario = roles.length > 0 ? roles[0].nombre_rol : 'Consulta';
 
             const token = jwt.sign(
                 {
                     id_usuario: usuario.id_usuario,
                     correo: usuario.correo,
-                    rol: usuario.rol
+                    rol: rol_usuario 
                 },
                 process.env.JWT_SECRET,
                 { expiresIn: '24h' }
@@ -99,16 +98,15 @@ class AuthController {
                 usuario: {
                     id: usuario.id_usuario,
                     correo: usuario.correo,
-                    rol: usuario.rol
+                    rol: rol_usuario
                 }
             });
 
         } catch (err) {
-            res.status(500).json({
-                error: 'Error interno: ' + err.message
-            });
+            res.status(500).json({ error: 'Error interno: ' + err.message });
         }
     }
+    
 
     static async logout(req, res) {
 

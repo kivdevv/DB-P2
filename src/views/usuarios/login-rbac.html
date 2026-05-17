@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demostración RBAC - Proyecto AIR</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; margin: 0; padding: 2rem; color: #1f2937; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        h1 { font-size: 1.5rem; margin-top: 0; color: #111827; }
+        .text-muted { color: #6b7280; font-size: 0.875rem; margin-bottom: 1.5rem; }
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.875rem; }
+        input { width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; background-color: #2563eb; color: white; padding: 0.5rem; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; margin-top: 0.5rem; }
+        button:hover { background-color: #1d4ed8; }
+        button.danger { background-color: #dc2626; margin-top: 1.5rem; }
+        button.danger:hover { background-color: #b91c1c; }
+        .hidden { display: none; }
+        #console { margin-top: 1.5rem; padding: 1rem; background: #1f2937; color: #10b981; font-family: monospace; font-size: 0.875rem; border-radius: 4px; height: 150px; overflow-y: auto; }
+        .log-error { color: #ef4444; }
+        .log-success { color: #10b981; }
+        .card { border: 1px solid #e5e7eb; padding: 1rem; border-radius: 4px; margin-top: 1rem; background: #f9fafb; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Demostración de Seguridad (RBAC)</h1>
+    <p class="text-muted">Control de Acceso Basado en Roles (Middleware)</p>
+
+    <div id="login-section">
+        <div class="card" style="margin-bottom: 1.5rem; font-size: 0.85rem;">
+            <strong>Cuentas de prueba:</strong><br>
+            Secretaría (Editor): <code>secretaria@test.com</code><br>
+            Asambleísta (Consulta): <code>asambleista@test.com</code><br>
+            Contraseña para ambas: <code>Password123</code>
+        </div>
+        
+        <div class="form-group">
+            <label>Correo Electrónico</label>
+            <input type="email" id="email" placeholder="usuario@test.com">
+        </div>
+        <div class="form-group">
+            <label>Contraseña</label>
+            <input type="password" id="password" value="Password123">
+        </div>
+        <button onclick="iniciarSesion()">Iniciar Sesión</button>
+    </div>
+
+    <div id="app-section" class="hidden">
+        <h2 id="welcome-msg" style="font-size: 1.1rem;"></h2>
+        <span id="role-badge" style="background: #e5e7eb; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: bold;"></span>
+
+        <div class="card">
+            <h3>Gestión de Normativa</h3>
+            <p style="font-size: 0.875rem;">El sistema verificará si tu rol actual tiene permisos de edición antes de procesar la solicitud en el backend.</p>
+            <button onclick="intentarCrearReglamento()">Modificar Reglamento (POST /api/reglamentos)</button>
+        </div>
+
+        <button class="danger" onclick="cerrarSesion()">Cerrar Sesión</button>
+    </div>
+
+    <div id="console">Esperando acción...<br></div>
+</div>
+
+<script>
+    let tokenActual = null;
+
+    function escribirConsola(mensaje, tipo = '') {
+        const consola = document.getElementById('console');
+        const clase = tipo === 'error' ? 'log-error' : (tipo === 'exito' ? 'log-success' : '');
+        const time = new Date().toLocaleTimeString();
+        consola.innerHTML += `<div class="${clase}">[${time}] ${mensaje}</div>`;
+        consola.scrollTop = consola.scrollHeight;
+    }
+
+    async function iniciarSesion() {
+        const correo = document.getElementById('email').value;
+        const contraseña = document.getElementById('password').value;
+        
+        escribirConsola(`Autenticando ${correo}...`);
+
+        try {
+            const resp = await fetch('/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ correo, contraseña })
+            });
+            const data = await resp.json();
+
+            if (!resp.ok) {
+                escribirConsola(`Fallo: ${data.error}`, 'error');
+                return;
+            }
+
+            tokenActual = data.token;
+            const rol = data.usuario.rol;
+            
+            escribirConsola(`Éxito. Token JWT recibido. Rol: ${rol}`, 'exito');
+            
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('app-section').classList.remove('hidden');
+            document.getElementById('welcome-msg').innerText = `Usuario: ${correo}`;
+            document.getElementById('role-badge').innerText = `Rol activo: ${rol}`;
+
+        } catch (error) {
+            escribirConsola('Error de conexión con el servidor', 'error');
+        }
+    }
+
+    function cerrarSesion() {
+        tokenActual = null;
+        document.getElementById('login-section').classList.remove('hidden');
+        document.getElementById('app-section').classList.add('hidden');
+        escribirConsola('Sesión cerrada.');
+    }
+
+    async function intentarCrearReglamento() {
+        escribirConsola('Intentando POST /api/reglamentos (Middleware validarRol)...');
+
+        try {
+            const resp = await fetch('/api/reglamentos', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${tokenActual}` 
+                },
+                body: JSON.stringify({ data: "dummy" })
+            });
+
+            const data = await resp.json();
+
+            if (resp.status === 403) {
+                escribirConsola(`BLOQUEADO: ${data.error}`, 'error');
+                alert("Acceso Denegado: No tienes los permisos necesarios.");
+            } else if (resp.status === 201) {
+                escribirConsola(`PERMITIDO: ${data.mensaje}`, 'exito');
+                alert("Operación exitosa: Reglamento modificado.");
+            } else {
+                escribirConsola(`Error inesperado: ${JSON.stringify(data)}`, 'error');
+            }
+        } catch (error) {
+            escribirConsola('Error de conexión', 'error');
+        }
+    }
+</script>
+</body>
+</html>

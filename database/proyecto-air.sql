@@ -961,14 +961,117 @@ INNER JOIN catalogo_etapas_propuestas cep ON cep.id_etapa_propuesta = pp.id_etap
 LEFT JOIN comision c ON c.id_comision = pp.id_comision
 ORDER BY p.id_propuesta, pp.fecha_participacion;
 
-
-
 -- 10.8 Datos semilla de comisiones para demo
 INSERT INTO comision (nombre, id_tipo_comision) VALUES
     ('Comision de Estatuto Organico', 1),
     ('Comision de Planificacion y Administracion', 1),
     ('Comision Especial de Reforma 2025', 2);
 
+
+--Issue 0
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- 1. ASEGURAR QUE LOS ROLES EXISTAN (Solución al fallo)
+INSERT INTO public.rol (nombre_rol, descripcion, nivel_acceso) VALUES 
+    ('Admin', 'Administrador', 3), 
+    ('Editor', 'Secretaría', 2), 
+    ('Consulta', 'Asambleísta', 1) 
+ON CONFLICT (nombre_rol) DO NOTHING;
+
+-- 2. CREAR USUARIOS EN AUTH DE SUPABASE
+DO $$
+DECLARE
+    v_sec_uid UUID;
+    v_asa_uid UUID;
+BEGIN
+    -- Crear usuario Secretaría
+    IF NOT EXISTS (SELECT 1 FROM auth.users WHERE email = 'secretaria@test.com') THEN
+        v_sec_uid := gen_random_uuid();
+        
+        INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at) 
+        VALUES (v_sec_uid, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'secretaria@test.com', crypt('Password123', gen_salt('bf')), NOW(), '{"provider":"email","providers":["email"]}', '{}', NOW(), NOW());
+        
+        INSERT INTO auth.identities (id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at) 
+        VALUES (gen_random_uuid(), v_sec_uid, format('{"sub":"%s","email":"%s"}', v_sec_uid::text, 'secretaria@test.com')::jsonb, 'email', v_sec_uid::text, NOW(), NOW(), NOW());
+    END IF;
+
+    -- Crear usuario Asambleísta
+    IF NOT EXISTS (SELECT 1 FROM auth.users WHERE email = 'asambleista@test.com') THEN
+        v_asa_uid := gen_random_uuid();
+        
+        INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at) 
+        VALUES (v_asa_uid, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'asambleista@test.com', crypt('Password123', gen_salt('bf')), NOW(), '{"provider":"email","providers":["email"]}', '{}', NOW(), NOW());
+        
+        INSERT INTO auth.identities (id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at) 
+        VALUES (gen_random_uuid(), v_asa_uid, format('{"sub":"%s","email":"%s"}', v_asa_uid::text, 'asambleista@test.com')::jsonb, 'email', v_asa_uid::text, NOW(), NOW(), NOW());
+    END IF;
+END $$;
+
+-- 3. CREAR USUARIOS EN PUBLIC
+INSERT INTO public.usuario (correo, contraseña_hash, estado) 
+VALUES 
+    ('secretaria@test.com', '$2a$12$IVU7mpSI2tw.M4C09o.X9uw2rSBZdrVzfkiw7YvTLeuloP139rw.u', 'Activo'),
+    ('asambleista@test.com', '$2a$12$IVU7mpSI2tw.M4C09o.X9uw2rSBZdrVzfkiw7YvTLeuloP139rw.u', 'Activo')
+ON CONFLICT (correo) DO NOTHING;
+
+-- 4. ASIGNAR ROLES
+-- Asignar 'Editor' a Secretaria
+INSERT INTO public.usuario_rol (id_usuario, id_rol)
+SELECT u.id_usuario, r.id_rol
+FROM public.usuario u, public.rol r
+WHERE u.correo = 'secretaria@test.com' AND r.nombre_rol = 'Editor'
+ON CONFLICT DO NOTHING;
+
+-- Asignar 'Consulta' a Asambleista
+INSERT INTO public.usuario_rol (id_usuario, id_rol)
+SELECT u.id_usuario, r.id_rol
+FROM public.usuario u, public.rol r
+WHERE u.correo = 'asambleista@test.com' AND r.nombre_rol = 'Consulta'
+ON CONFLICT DO NOTHING;
+
+-- 5. CREAR FUNCIÓN Y POLÍTICAS RLS
+CREATE OR REPLACE FUNCTION auth_tiene_rol(rol_buscado VARCHAR)
+RETURNS BOOLEAN AS $$
+DECLARE
+    tiene_permiso BOOLEAN;
+BEGIN
+    SELECT EXISTS (
+        SELECT 1 
+        FROM public.usuario u
+        JOIN public.usuario_rol ur ON u.id_usuario = ur.id_usuario
+        JOIN public.rol r ON ur.id_rol = r.id_rol
+        WHERE u.correo = (auth.jwt() ->> 'email')
+        AND r.nombre_rol = rol_buscado
+    ) INTO tiene_permiso;
+    
+    RETURN tiene_permiso;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+ALTER TABLE public.reglamento ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Lectura de reglamentos general" ON public.reglamento;
+CREATE POLICY "Lectura de reglamentos general"
+ON public.reglamento FOR SELECT
+TO authenticated
+USING (true);
+
+DROP POLICY IF EXISTS "Solo editores pueden insertar reglamentos" ON public.reglamento;
+CREATE POLICY "Solo editores pueden insertar reglamentos"
+ON public.reglamento FOR INSERT
+TO authenticated
+WITH CHECK (
+    auth_tiene_rol('Editor') OR auth_tiene_rol('Admin')
+);
+
+DROP POLICY IF EXISTS "Solo editores pueden editar reglamentos" ON public.reglamento;
+CREATE POLICY "Solo editores pueden editar reglamentos"
+ON public.reglamento FOR UPDATE
+TO authenticated
+USING (
+    auth_tiene_rol('Editor') OR auth_tiene_rol('Admin')
+);
+-- FIN issue 0
 
 
 -- Issue 1
