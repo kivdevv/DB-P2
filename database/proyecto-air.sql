@@ -1076,3 +1076,40 @@ EXECUTE PROCEDURE fn_generar_folio_unico();
 
 -- FIN issue 1
 
+
+--INICIO ISSUE 14
+
+-- Tabla: Nombramiento (Período de un asambleísta en un sector)
+CREATE TABLE IF NOT EXISTS sector (
+id_sector UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+nombre_sector VARCHAR(100) NOT NULL UNIQUE,
+descripcion TEXT,
+fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS nombramiento (
+id_nombramiento UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+id_asambleista UUID NOT NULL REFERENCES asambleista(id_asambleista) ON DELETE CASCADE,
+id_sector UUID NOT NULL REFERENCES sector(id_sector) ON DELETE RESTRICT,
+fecha_inicio DATE NOT NULL,
+fecha_fin DATE,
+estado VARCHAR(20) DEFAULT 'Activo' CHECK (estado IN ('Activo', 'Histórico', 'Suspendido')),
+fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+CONSTRAINT ck_fechas CHECK (fecha_fin IS NULL OR fecha_fin >= fecha_inicio),
+CONSTRAINT uk_nombr_periodo UNIQUE (id_asambleista, id_sector, fecha_inicio)
+);
+
+-- Crear índices
+CREATE INDEX idx_nombr_asambleista ON nombramiento(id_asambleista);
+CREATE INDEX idx_nombr_sector ON nombramiento(id_sector);
+CREATE INDEX idx_nombr_fechas ON nombramiento(fecha_inicio, fecha_fin);
+
+-- Insertar sectores iniciales
+INSERT INTO sector (nombre_sector, descripcion) VALUES
+('Docente', 'Represente sector académico'),
+('Estudiante', 'Representa sector estudiantil'),
+('Administrativo', 'Representa personal administrativo'),
+('Directorio', 'Miembro del directorio AIR')
+ON CONFLICT DO NOTHING;
+
+-- FIN issue 14\
