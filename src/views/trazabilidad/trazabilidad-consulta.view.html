@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trazabilidad de Propuestas - AIR</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            padding: 2rem 1rem;
+            color: #1a1a1a;
+        }
+
+        .contenedor {
+            max-width: 960px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 2rem 2.5rem;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .subtitulo {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 2rem;
+        }
+
+        .buscador {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.75rem;
+            flex-wrap: wrap;
+        }
+
+        select, input {
+            font-family: inherit;
+            font-size: 0.95rem;
+            padding: 0.45rem 0.65rem;
+            border: 1px solid #ccc;
+            background: #fff;
+            flex: 1;
+            min-width: 180px;
+        }
+
+        button {
+            font-family: inherit;
+            font-size: 0.95rem;
+            padding: 0.45rem 1.2rem;
+            border: 1px solid #333;
+            background: #fff;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        button:hover { background: #f0f0f0; }
+
+        .seccion-propuesta {
+            margin-bottom: 2.5rem;
+        }
+
+        .info-propuesta {
+            background: #f9f9f9;
+            border-left: 3px solid #333;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .info-propuesta h2 {
+            font-size: 1.1rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .info-propuesta p {
+            font-size: 0.85rem;
+            color: #555;
+        }
+
+        .clausula-legal {
+            background: #fffbe6;
+            border: 1px solid #e0d070;
+            padding: 0.65rem 1rem;
+            font-size: 0.9rem;
+            margin-bottom: 1.25rem;
+            font-style: italic;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: #222;
+            color: #fff;
+            padding: 0.6rem 0.75rem;
+            text-align: left;
+            font-weight: normal;
+        }
+
+        td {
+            padding: 0.55rem 0.75rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        tr:hover td { background: #f8f8f8; }
+
+        .estado {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            font-size: 0.8rem;
+            border-radius: 3px;
+            background: #e8f4e8;
+            color: #2a6e2a;
+        }
+
+        .enlace-certificado {
+            font-size: 0.85rem;
+            color: #1a5fa8;
+            text-decoration: none;
+        }
+
+        .enlace-certificado:hover { text-decoration: underline; }
+
+        .mensaje {
+            color: #888;
+            font-style: italic;
+            padding: 1rem 0;
+        }
+
+        .error { color: #c00; }
+    </style>
+</head>
+<body>
+    <div class="contenedor">
+        <h1>Trazabilidad de Propuestas</h1>
+        <p class="subtitulo">Asamblea Institucional Representativa - TEC</p>
+
+        <div class="buscador">
+            <select id="selector-propuesta">
+                <option value="">Cargando propuestas...</option>
+            </select>
+            <button id="btn-consultar">Consultar trazabilidad</button>
+        </div>
+
+        <div id="resultado"></div>
+    </div>
+
+    <script>
+        function esc(v) {
+            return String(v ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function formatFecha(f) {
+            if (!f) return '-';
+            const d = new Date(f + 'T00:00:00');
+            return d.toLocaleDateString('es-CR');
+        }
+
+        async function cargarPropuestas() {
+            const sel = document.getElementById('selector-propuesta');
+            try {
+                const resp = await fetch('/api/trazabilidad/propuestas');
+                if (!resp.ok) throw new Error('Error ' + resp.status);
+                const lista = await resp.json();
+
+                sel.innerHTML = '<option value="">-- Seleccione una propuesta --</option>';
+                for (const p of lista) {
+                    const opt = document.createElement('option');
+                    opt.value = p.id_propuesta;
+                    opt.textContent = '#' + p.id_propuesta + ' - ' + p.titulo;
+                    sel.appendChild(opt);
+                }
+            } catch {
+                sel.innerHTML = '<option value="">Error al cargar propuestas</option>';
+            }
+        }
+
+        async function consultarTrazabilidad() {
+            const id = document.getElementById('selector-propuesta').value;
+            const contenedor = document.getElementById('resultado');
+
+            if (!id) {
+                contenedor.innerHTML = '<p class="mensaje">Seleccione una propuesta para ver su trazabilidad.</p>';
+                return;
+            }
+
+            contenedor.innerHTML = '<p class="mensaje">Cargando...</p>';
+
+            try {
+                const [respTraz, respClausula] = await Promise.all([
+                    fetch('/api/trazabilidad/propuesta/' + id),
+                    fetch('/api/trazabilidad/clausula/' + id)
+                ]);
+
+                if (respTraz.status === 404) {
+                    contenedor.innerHTML = '<p class="mensaje">Esta propuesta no tiene participaciones registradas aun.</p>';
+                    return;
+                }
+                if (!respTraz.ok) throw new Error('Error ' + respTraz.status);
+
+                const filas = await respTraz.json();
+                const { clausula_legal } = respClausula.ok ? await respClausula.json() : { clausula_legal: null };
+
+                const primera = filas[0];
+
+                let html = '<div class="seccion-propuesta">';
+                html += '<div class="info-propuesta">';
+                html += '<h2>' + esc(primera.propuesta_titulo) + '</h2>';
+                html += '<p>Propuesta #' + esc(primera.id_propuesta) + ' &nbsp;|&nbsp; Creada: ' + formatFecha(primera.fecha_creacion) + '</p>';
+                html += '</div>';
+
+                if (clausula_legal) {
+                    html += '<div class="clausula-legal">' + esc(clausula_legal) + '</div>';
+                }
+
+                html += '<table>';
+                html += '<thead><tr><th>Etapa</th><th>Asambleista</th><th>Comision</th><th>Fecha</th><th>Rol</th><th>Observaciones</th></tr></thead>';
+                html += '<tbody>';
+                for (const f of filas) {
+                    html += '<tr>';
+                    html += '<td><span class="estado">' + esc(f.etapa) + '</span></td>';
+                    html += '<td>' + esc(f.asambleista_nombre) + '</td>';
+                    html += '<td>' + esc(f.comision_nombre ?? '-') + '</td>';
+                    html += '<td>' + formatFecha(f.fecha_participacion) + '</td>';
+                    html += '<td>' + esc(f.rol ?? '-') + '</td>';
+                    html += '<td>' + esc(f.observaciones ?? '-') + '</td>';
+                    html += '</tr>';
+                }
+                html += '</tbody></table>';
+
+                html += '<p style="margin-top:1rem; font-size:0.85rem;">';
+                html += '<a class="enlace-certificado" href="certificado-trazabilidad.view.html?id=' + esc(id) + '">Ver certificado imprimible &rarr;</a>';
+                html += '</p>';
+
+                html += '</div>';
+                contenedor.innerHTML = html;
+
+            } catch {
+                contenedor.innerHTML = '<p class="mensaje error">No se pudo cargar la trazabilidad.</p>';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarPropuestas();
+            document.getElementById('btn-consultar').addEventListener('click', consultarTrazabilidad);
+        });
+    </script>
+</body>
+</html>

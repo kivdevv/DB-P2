@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>
+Lista de Asambleistas
+</title>
+
+<style>
+
+body{
+font-family: Arial;
+margin:20px;
+}
+
+table{
+width:100%;
+border-collapse: collapse;
+margin-top:20px;
+}
+
+th, td{
+border:1px solid black;
+padding:10px;
+text-align:left;
+}
+
+th{
+background:#f2f2f2;
+}
+
+.vigente{
+background:green;
+color:white;
+padding:5px;
+border-radius:5px;
+}
+
+.inactivo{
+background:red;
+color:white;
+padding:5px;
+border-radius:5px;
+}
+
+input{
+padding:8px;
+width:250px;
+}
+
+button{
+padding:8px;
+cursor:pointer;
+}
+
+img{
+width:60px;
+height:60px;
+object-fit:cover;
+border-radius:50%;
+}
+
+.mensaje{
+margin-top:20px;
+font-weight:bold;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>
+Lista de Asambleistas
+</h1>
+
+<input 
+type="text"
+id="busqueda"
+placeholder="Buscar por nombre o cédula">
+
+<button id="btnConsultar">
+Consultar
+</button>
+
+<div
+class="mensaje"
+id="mensaje">
+</div>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>
+Foto
+</th>
+
+<th>
+Nombre
+</th>
+
+<th>
+Cédula
+</th>
+
+<th>
+Correo
+</th>
+
+<th>
+Estado
+</th>
+
+</tr>
+
+</thead>
+
+<tbody id="tablaAsambleistas">
+
+</tbody>
+
+</table>
+
+<script>
+
+const tabla =
+document.getElementById(
+'tablaAsambleistas'
+);
+
+const mensaje =
+document.getElementById(
+'mensaje'
+);
+
+const btnConsultar =
+document.getElementById(
+'btnConsultar'
+);
+
+async function cargarAsambleistas(){
+
+    try {
+
+        btnConsultar.disabled = true;
+
+        btnConsultar.textContent =
+        'Consultando...';
+
+        mensaje.textContent = '';
+
+        const busqueda =
+        document.getElementById(
+        'busqueda'
+        ).value;
+
+
+        const respuesta =
+        await fetch(
+`http://localhost:3000/asambleistas`
+        );
+
+        const datos =
+        await respuesta.json();
+
+        tabla.innerHTML = '';
+
+        if(datos.length === 0){
+
+            mensaje.textContent =
+            'No se encontraron asambleistas';
+
+            return;
+        }
+
+        datos.forEach(function(asambleista){
+
+            const estado =
+            asambleista.activo
+            ? '<span class="vigente">VIGENTE</span>'
+            : '<span class="inactivo">INACTIVO</span>';
+
+            const foto =
+            asambleista.foto_url
+            ? asambleista.foto_url
+            : 'https://via.placeholder.com/60';
+
+            tabla.innerHTML += `
+                <tr>
+
+                    <td>
+                        <img src="${foto}">
+                    </td>
+
+                    <td>
+                        ${asambleista.nombre_completo}
+                    </td>
+
+                    <td>
+                        ${asambleista.cedula}
+                    </td>
+
+                    <td>
+                        ${asambleista.correo}
+                    </td>
+
+                    <td>
+                        ${estado}
+                    </td>
+
+                </tr>
+            `;
+        });
+
+    } catch(error){
+
+        console.error(error);
+
+        mensaje.textContent =
+        'Error al consultar asambleistas';
+
+    } finally {
+
+        btnConsultar.disabled = false;
+
+        btnConsultar.textContent =
+        'Consultar';
+    }
+}
+
+btnConsultar.addEventListener(
+'click',
+cargarAsambleistas
+);
+
+cargarAsambleistas();
+
+</script>
+
+</body>
+</html>

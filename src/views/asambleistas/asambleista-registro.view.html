@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>
+Registro Asambleista
+</title>
+
+<style>
+
+body{
+font-family: Arial;
+margin:20px;
+}
+
+form{
+max-width:600px;
+}
+
+input,
+select,
+button{
+width:100%;
+padding:10px;
+margin-top:5px;
+margin-bottom:15px;
+}
+
+button{
+cursor:pointer;
+}
+
+.mensaje{
+margin-top:20px;
+font-weight:bold;
+}
+
+.error{
+color:red;
+}
+
+.exito{
+color:green;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>
+Registro de Asambleista
+</h1>
+
+<form id="formAsambleista">
+
+<label>
+Nombre Completo
+</label>
+
+<input
+type="text"
+id="nombre_completo"
+required>
+
+<label>
+Cédula
+</label>
+
+<input
+type="text"
+id="cedula"
+placeholder="1-1234-5678"
+pattern="[0-9]-[0-9]{4}-[0-9]{4}"
+required>
+
+<label>
+Correo
+</label>
+
+<input
+type="email"
+id="correo"
+required>
+
+<label>
+Sector
+</label>
+
+<select
+id="sector"
+required>
+
+<option value="">
+Seleccione
+</option>
+
+</select>
+
+<label>
+Fecha Inicio
+</label>
+
+<input
+type="date"
+id="fecha_inicio"
+required>
+
+<label>
+Fecha Fin
+</label>
+
+<input
+type="date"
+id="fecha_fin">
+
+<button type="submit">
+Guardar Asambleista
+</button>
+
+</form>
+
+<div
+class="mensaje"
+id="mensaje">
+</div>
+
+<script>
+
+const form =
+document.getElementById(
+'formAsambleista'
+);
+
+const mensaje =
+document.getElementById(
+'mensaje'
+);
+
+const selectSector =
+document.getElementById(
+'sector'
+);
+
+async function cargarSectores(){
+
+    try {
+
+        const respuesta =
+        await fetch(
+'http://localhost:3000/catalogos/sectores'
+        );
+
+        const sectores =
+        await respuesta.json();
+
+        sectores.forEach(function(sector){
+
+            selectSector.innerHTML += `
+                <option value="${sector.nombre}">
+                    ${sector.nombre}
+                </option>
+            `;
+        });
+
+    } catch(error){
+
+        console.error(error);
+
+        mensaje.textContent =
+        'Error al cargar sectores';
+
+        mensaje.className =
+        'mensaje error';
+    }
+}
+
+form.addEventListener(
+'submit',
+async function(event){
+
+    event.preventDefault();
+
+    try {
+
+        mensaje.textContent = '';
+
+        const fechaInicio =
+        document.getElementById(
+        'fecha_inicio'
+        ).value;
+
+        const fechaFin =
+        document.getElementById(
+        'fecha_fin'
+        ).value;
+
+        if(
+            fechaFin &&
+            fechaInicio > fechaFin
+        ){
+
+            mensaje.textContent =
+            'La fecha inicio no puede ser mayor a la fecha fin';
+
+            mensaje.className =
+            'mensaje error';
+
+            return;
+        }
+
+        const datos = {
+
+            nombre_completo:
+            document.getElementById(
+            'nombre_completo'
+            ).value,
+
+            cedula:
+            document.getElementById(
+            'cedula'
+            ).value,
+
+            correo:
+            document.getElementById(
+            'correo'
+            ).value,
+
+            activo: true
+        };
+
+        const respuesta =
+        await fetch(
+'http://localhost:3000/asambleistas',
+        {
+            method:'POST',
+
+            headers:{
+                'Content-Type':
+                'application/json'
+            },
+
+            body: JSON.stringify(datos)
+        });
+
+        if(!respuesta.ok){
+
+            throw new Error(
+                'Error al registrar'
+            );
+        }
+
+        mensaje.textContent =
+        'Asambleista registrado correctamente';
+
+        mensaje.className =
+        'mensaje exito';
+
+        form.reset();
+
+    } catch(error){
+
+        console.error(error);
+
+        mensaje.textContent =
+        'Error al registrar asambleista';
+
+        mensaje.className =
+        'mensaje error';
+    }
+});
+
+cargarSectores();
+
+</script>
+
+</body>
+
+</html>
