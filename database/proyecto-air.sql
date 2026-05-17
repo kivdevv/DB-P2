@@ -6,12 +6,12 @@
 -- Issue #0
 
 CREATE TABLE catalogo_maestro (
-  id_item SERIAL PRIMARY KEY,
-  grupo_catalogo VARCHAR(50) NOT NULL,
-  nombre VARCHAR(100) NOT NULL,
-  activo BOOLEAN NOT NULL DEFAULT TRUE,
-  fecha_creacion TIMESTAMP NOT NULL DEFAULT NOW(),
-  UNIQUE (grupo_catalogo, nombre)
+    id_item SERIAL PRIMARY KEY,
+    grupo_catalogo VARCHAR(50) NOT NULL,
+    nombre VARCHAR(100) NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
+    fecha_creacion TIMESTAMP NOT NULL DEFAULT NOW(),
+    UNIQUE (grupo_catalogo, nombre)
 );
 
 -- Índice para búsquedas rápidas por grupo
@@ -968,4 +968,25 @@ INSERT INTO comision (nombre, id_tipo_comision) VALUES
     ('Comision de Estatuto Organico', 1),
     ('Comision de Planificacion y Administracion', 1),
     ('Comision Especial de Reforma 2025', 2);
+
+
+
+-- Issue 1
+CREATE TABLE IF NOT EXISTS control_folio (
+    id_control_folio SERIAL PRIMARY KEY,
+    año INTEGER NOT NULL UNIQUE,
+    ultimo_numero INTEGER NOT NULL DEFAULT 0,
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT ck_ano_valido CHECK (año >= 2000 AND año <= 2100),
+CONSTRAINT ck_numero_positivo CHECK (ultimo_numero >= 0)
+);
+
+-- Crear índice para búsquedas rápidas por año
+CREATE INDEX idx_control_folio_año ON control_folio(año);
+
+-- Insertar registro inicial para año actual (2026)
+INSERT INTO control_folio (año, ultimo_numero)
+VALUES (EXTRACT(YEAR FROM CURRENT_DATE)::INTEGER, 0)
+ON CONFLICT (año) DO NOTHING;
+-- FIN issue 1
 
