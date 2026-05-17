@@ -992,7 +992,7 @@ ON CONFLICT (año) DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS certificacion_emitida (
     id_certificacion UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    id_asambleista UUID NOT NULL,
+    id_asambleista INTEGER NOT NULL,
     folio_unico VARCHAR(50) NOT NULL UNIQUE,
     tipo_certificacion VARCHAR(100),
     contenido TEXT NOT NULL,
