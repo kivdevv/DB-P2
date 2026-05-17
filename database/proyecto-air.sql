@@ -988,5 +988,31 @@ CREATE INDEX idx_control_folio_año ON control_folio(año);
 INSERT INTO control_folio (año, ultimo_numero)
 VALUES (EXTRACT(YEAR FROM CURRENT_DATE)::INTEGER, 0)
 ON CONFLICT (año) DO NOTHING;
+
+
+CREATE TABLE IF NOT EXISTS certificacion_emitida (
+    id_certificacion UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id_asambleista UUID NOT NULL,
+    folio_unico VARCHAR(50) NOT NULL UNIQUE,
+    tipo_certificacion VARCHAR(100),
+    contenido TEXT NOT NULL,
+    hash_seguridad VARCHAR(64) NOT NULL,
+    fecha_emision TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    usuario_secretaria UUID NOT NULL REFERENCES usuario(id_usuario),
+    CONSTRAINT fk_cert_asambleista FOREIGN KEY (id_asambleista) 
+    REFERENCES asambleista(id_asambleista) ON DELETE RESTRICT,
+    CONSTRAINT fk_cert_usuario FOREIGN KEY (usuario_secretaria)
+    REFERENCES usuario(id_usuario) ON DELETE RESTRICT
+);
+
+CREATE INDEX idx_cert_folio ON certificacion_emitida(folio_unico);
+CREATE INDEX idx_cert_asambleista ON certificacion_emitida(id_asambleista);
+CREATE INDEX idx_cert_fecha ON certificacion_emitida(fecha_emision);
+
+
+
+
+
+
 -- FIN issue 1
 
