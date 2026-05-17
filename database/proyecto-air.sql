@@ -990,9 +990,10 @@ VALUES (EXTRACT(YEAR FROM CURRENT_DATE)::INTEGER, 0)
 ON CONFLICT (año) DO NOTHING;
 
 
+
 CREATE TABLE IF NOT EXISTS certificacion_emitida (
     id_certificacion UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    id_asambleista UUID NOT NULL,
+    id_asambleista INTEGER NOT NULL,
     folio_unico VARCHAR(50) NOT NULL UNIQUE,
     tipo_certificacion VARCHAR(100),
     contenido TEXT NOT NULL,
@@ -1010,9 +1011,68 @@ CREATE INDEX idx_cert_asambleista ON certificacion_emitida(id_asambleista);
 CREATE INDEX idx_cert_fecha ON certificacion_emitida(fecha_emision);
 
 
+CREATE OR REPLACE FUNCTION fn_bloquear_certificacion()
+RETURNS TRIGGER AS $$
+BEGIN
+-- Si intentan UPDATE o DELETE en una certificación que ya fue emitida
+IF TG_OP = 'UPDATE' OR TG_OP = 'DELETE' THEN
+    -- Lanzar excepción para que el controlador la reciba
+    RAISE EXCEPTION 'No se puede modificar o eliminar una certificación ya emitida. '
+                    'Folio: %, Hash: %', OLD.folio_unico, OLD.hash_seguridad;
+END IF;
+
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tg_no_repudio_cert
+BEFORE UPDATE OR DELETE ON certificacion_emitida
+FOR EACH ROW
+EXECUTE PROCEDURE fn_bloquear_certificacion();
 
 
+CREATE OR REPLACE FUNCTION fn_generar_folio_unico()
+RETURNS TRIGGER AS $$
+DECLARE
+v_ultimo_numero INTEGER;
+v_año INTEGER;
+v_folio_nuevo VARCHAR;
+BEGIN
+-- Obtener año fiscal actual
+v_año := EXTRACT(YEAR FROM CURRENT_DATE);
 
+-- Obtener el último número secuencial de este año (con lock para atomicidad)
+SELECT COALESCE(ultimo_numero, 0)
+INTO v_ultimo_numero
+FROM control_folio
+WHERE año = v_año
+FOR UPDATE; -- Lock para evitar race conditions
+
+-- Incrementar
+v_ultimo_numero := v_ultimo_numero + 1;
+
+-- Generar folio con formato
+v_folio_nuevo := 'DAIR-' || LPAD(v_ultimo_numero::TEXT, 3, '0') || '-' || v_año;
+
+-- Actualizar o insertar en control_folio
+INSERT INTO control_folio (año, ultimo_numero, fecha_actualizacion)
+VALUES (v_año, v_ultimo_numero, CURRENT_TIMESTAMP)
+ON CONFLICT (año)
+DO UPDATE SET 
+ultimo_numero = v_ultimo_numero,
+fecha_actualizacion = CURRENT_TIMESTAMP;
+
+-- Asignar folio al nuevo registro de certificación
+NEW.folio_unico := v_folio_nuevo;
+
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tg_folio_secuencial
+BEFORE INSERT ON certificacion_emitida
+FOR EACH ROW
+EXECUTE PROCEDURE fn_generar_folio_unico();
 
 -- FIN issue 1
 
